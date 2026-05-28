@@ -177,11 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <i class="fa-solid fa-anchor"></i> Iniciar Sesión
     </button>
   </form>
-
-  <div class="hint">
-    <i class="fa-solid fa-circle-info"></i>
-    Usuarios de prueba — contraseña: <code>123456</code>
-  </div>
 </div>
 
 <script>
