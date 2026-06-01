@@ -1,0 +1,425 @@
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.LinearGradientPaint;
+import java.awt.RenderingHints;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.io.File;
+import java.io.FileWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.Timer;
+
+public class Login extends JFrame {
+
+    class Burbuja {
+        float x, y, tamanio, velocidad;
+        public Burbuja() {
+            tamanio = (float)(Math.random() * 16 + 4);
+            velocidad = (float)(1.0 / tamanio * 30);
+            x = (float)(Math.random() * 1920);
+            y = (float)(Math.random() * 1080);
+        }
+    }   
+
+    class RTF extends JTextField {
+        private int radio;
+        private boolean enfocado; 
+
+        public RTF(int radio) {
+            this.radio = radio;
+            setOpaque(false);
+            addFocusListener(new FocusAdapter(){
+                public void focusGained(FocusEvent e){
+                    enfocado = true;
+                    repaint();
+                }
+                public void focusLost(FocusEvent e){
+                    enfocado = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g){
+            Graphics2D g2 = (Graphics2D)g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radio, radio);
+            super.paintComponent(g);
+            g2.dispose();
+        }
+
+        @Override
+        protected void paintBorder(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(enfocado ? new Color(0, 230, 210) : new Color(64, 180, 200));
+            g2.setStroke(new BasicStroke(enfocado ? 3 : 2));
+            g2.drawLine(radio/2, getHeight()-1, getWidth()-radio/2, getHeight()-1);
+            g2.dispose();
+        }
+    }
+
+    class RPF extends JPasswordField {
+        private int radio2;
+        private boolean enfocado;
+
+        public RPF(int radio2){
+            this.radio2 = radio2; 
+            setOpaque(false);
+            addFocusListener(new FocusAdapter(){
+                public void focusGained(FocusEvent e){
+                    enfocado = true;
+                    repaint();
+                }
+                public void focusLost(FocusEvent e){
+                    enfocado = false;
+                    repaint();
+                } 
+            });
+        }
+
+        @Override 
+        protected void paintComponent(Graphics g){
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), radio2, radio2);
+            super.paintComponent(g);
+            g2.dispose();
+        }
+
+        @Override
+        protected void paintBorder(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(enfocado ? new Color(0, 230, 210) : new Color(64, 180, 200));
+            g2.setStroke(new BasicStroke(enfocado ? 3 : 2));
+            g2.drawLine(radio2/2, getHeight()-1, getWidth()-radio2/2, getHeight()-1);
+            g2.dispose();
+        }
+    }
+
+    class inicioS extends JButton {
+        private int radio;
+        private boolean hover;
+        
+        public inicioS(String texto, int radio){
+            this.radio = radio;
+            setText(texto);
+            setOpaque(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            addMouseListener(new java.awt.event.MouseAdapter(){
+                public void mouseEntered(java.awt.event.MouseEvent e){
+                    hover = true;
+                    repaint();
+                }
+                public void mouseExited(java.awt.event.MouseEvent e){
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g){
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(hover ? new Color(0, 230, 210) : new Color(64, 180, 200));
+            setForeground(hover ? new Color(255, 255, 255) : new Color(15, 35, 70));
+            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), radio, radio);
+            super.paintComponent(g);
+            g2d.dispose();
+        }
+        
+        @Override
+        protected void paintBorder(Graphics g){
+            // sin borde
+        }
+    }
+        
+    class Panel extends JPanel {
+        
+        List<Burbuja> burbujas = new ArrayList<>();
+        JLabel Bienvenidos = new JLabel("Bienvenidos");
+        JLabel subBienvenidos = new JLabel("Inicia sesion para empezar tu dia");
+        JTextField campoUsuario = new RTF(20);
+        JLabel errUsu = new JLabel("El usuario no puede estar vacío");
+        JTextField campoColegio = new RTF(20);
+        JLabel errCol = new JLabel("El código del colegio no puede estar vacío");
+        JPasswordField campoPassword = new RPF(20);
+        JLabel errPass = new JLabel("La contraseña no puede estar vacía");
+        JLabel placeholderPassword = new JLabel("Introduce tu contraseña");
+        inicioS botonLogin = new inicioS("Iniciar Sesion", 15);
+        JLabel Acceso = new JLabel("Clickeame: Solicitar acceso");
+        Boolean inicializacion = false; 
+
+        public Panel(){
+            setLayout(null);
+            for (int i = 0; i < 50; i++){
+                burbujas.add(new Burbuja());
+            }
+            setOpaque(false);
+            Timer timer = new Timer(16, e ->{
+                for (Burbuja b : burbujas){
+                    b.y -= b.velocidad;
+                    if(b.y < 0){
+                        b.y = getHeight();
+                        b.x = (float)(Math.random() * getWidth());
+                    }
+                }
+                repaint();
+            });
+            timer.start();
+            
+            campoUsuario.addFocusListener(new FocusAdapter(){
+                public void focusGained(FocusEvent e){
+                    if(campoUsuario.getText().equals("Escribe tu Usuario:")){
+                        campoUsuario.setText("");
+                        campoUsuario.setForeground(new Color(220, 235, 255));
+                    }
+                }
+                public void focusLost(FocusEvent e){
+                    if(campoUsuario.getText().isEmpty()){
+                        campoUsuario.setText("Escribe tu Usuario:");
+                        campoUsuario.setForeground(new Color(140, 160, 190));
+                    }
+                }
+            });
+
+            campoColegio.addFocusListener(new FocusAdapter(){
+                public void focusGained(FocusEvent e){
+                    if(campoColegio.getText().equals("Escribe el Codigo de tu Colegio:")){
+                        campoColegio.setText("");
+                        campoColegio.setForeground(new Color(220, 235, 255));
+                    }
+                }
+                public void focusLost(FocusEvent e){
+                    if(campoColegio.getText().isEmpty()){
+                        campoColegio.setText("Escribe el Codigo de tu Colegio:");
+                        campoColegio.setForeground(new Color(140, 160, 190));
+                    }
+                }
+            });
+
+            campoPassword.addFocusListener(new FocusAdapter(){
+                public void focusGained(FocusEvent e){
+                    placeholderPassword.setVisible(false);
+                }   
+                public void focusLost(FocusEvent e){
+                    if(campoPassword.getPassword().length == 0){
+                        placeholderPassword.setVisible(true);
+                    }
+                }
+            });
+
+            botonLogin.addActionListener(e -> {
+                boolean hayError = false;
+
+                if(campoUsuario.getText().equals("Escribe tu Usuario:") || campoUsuario.getText().isEmpty()){
+                    errUsu.setVisible(true);
+                    hayError = true;
+                } else {
+                    errUsu.setVisible(false);
+                }
+
+                // campoColegio no tiene función por ahora, se oculta su error
+                errCol.setVisible(false);
+
+                if(campoPassword.getPassword().length == 0){
+                    errPass.setVisible(true);
+                    hayError = true;
+                } else {
+                    errPass.setVisible(false);
+                }
+
+                if(!hayError){
+                    try {
+                        String correo   = campoUsuario.getText();
+                        String password = new String(campoPassword.getPassword());
+
+                        String sql = "SELECT id_rol, nombre FROM usuario WHERE correo = ? AND contrasena = ?";
+                        Connection con = Conexion.obtener();
+                        PreparedStatement ps = con.prepareStatement(sql);
+                        ps.setString(1, correo);
+                        ps.setString(2, password);
+                        ResultSet rs = ps.executeQuery();
+
+                        if(rs.next()){
+                            String nombre = rs.getString("nombre");
+
+                            // Crear HTML temporal con auto-POST a index.php
+                            String correoEscapado   = correo.replace("\"", "&quot;");
+                            String passwordEscapado = password.replace("\"", "&quot;");
+                            String htmlContent =
+                                "<!DOCTYPE html><html><body>" +
+                                "<form id='f' method='POST' action='http://localhost/sidino/index.php'>" +
+                                "<input type='hidden' name='correo'   value=\"" + correoEscapado   + "\"/>" +
+                                "<input type='hidden' name='password' value=\"" + passwordEscapado + "\"/>" +
+                                "</form>" +
+                                "<script>document.getElementById('f').submit();</script>" +
+                                "</body></html>";
+
+                            // Guardar HTML temporal en carpeta temp del sistema
+                            File tempFile = File.createTempFile("sidino_login_", ".html");
+                            tempFile.deleteOnExit();
+                            try (FileWriter fw = new FileWriter(tempFile)) {
+                                fw.write(htmlContent);
+                            }
+
+                            // Abrir en el navegador
+                            java.awt.Desktop.getDesktop().browse(tempFile.toURI());
+                            JOptionPane.showMessageDialog(null, "Bienvenido " + nombre + ", entrando a las profundidades 🐙");
+
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos.");
+                        }
+
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
+                    }
+                }
+            });
+        }
+
+        @Override 
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (!inicializacion){
+                Bienvenidos.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 100, 300, 30);
+                Bienvenidos.setForeground(new Color(220, 235, 255));
+                Bienvenidos.setFont(new Font("Arial", Font.BOLD, 24));
+                Bienvenidos.setHorizontalAlignment(JLabel.CENTER);
+
+                subBienvenidos.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 138, 300, 20);
+                subBienvenidos.setForeground(new Color(140, 160, 190));
+                subBienvenidos.setFont(new Font("Arial", Font.PLAIN, 16));
+                subBienvenidos.setHorizontalAlignment(JLabel.CENTER);
+
+                campoUsuario.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 180, 300, 35);
+                campoUsuario.setText("Escribe tu Usuario:");
+                campoUsuario.setForeground(new Color(140, 160, 190));
+                campoUsuario.setBackground(new Color(40, 65, 110));
+                campoUsuario.setCaretColor(new Color(0, 230, 210));
+                ((RTF)campoUsuario).setMargin(new Insets(0, 15, 0, 0));
+                errUsu.setForeground(new Color(255, 80, 80));
+                errUsu.setFont(new Font("Arial", Font.PLAIN, 14));
+                errUsu.setVisible(false);
+                errUsu.setBounds((getWidth() - 275) / 2, (getHeight() - 500) / 2 + 150, 300, 35);
+
+                campoColegio.setBounds((getWidth() - 300) / 2, (getHeight() - 375) / 2 + 180, 300, 35);
+                campoColegio.setText("Escribe el Codigo de tu Colegio:");
+                campoColegio.setForeground(new Color(140, 160, 190));
+                campoColegio.setCaretColor(new Color(0, 230, 210));
+                campoColegio.setBackground(new Color(40, 65, 110));
+                ((RTF)campoColegio).setMargin(new Insets(0, 15, 0, 0));
+                errCol.setForeground(new Color(255, 80, 80));
+                errCol.setFont(new Font("Arial", Font.PLAIN, 14));
+                errCol.setVisible(false);
+                errCol.setBounds((getWidth() - 275) / 2, (getHeight() - 375) / 2 + 150, 300, 35);
+
+                campoPassword.setBounds((getWidth() - 300) / 2, (getHeight() - 250) / 2 + 180, 300, 35);
+                campoPassword.setForeground(new Color(220, 235, 255));
+                campoPassword.setCaretColor(new Color(0, 230, 210));
+                campoPassword.setBackground(new Color(40, 65, 110));
+                ((RPF)campoPassword).setMargin(new Insets(0, 15, 0, 0));
+                errPass.setForeground(new Color(255, 80, 80));
+                errPass.setFont(new Font("Arial", Font.PLAIN, 14));
+                errPass.setVisible(false);
+                errPass.setBounds((getWidth() - 275) / 2, (getHeight() - 250) / 2 + 150, 300, 35);
+
+                placeholderPassword.setBounds(
+                    (getWidth() - 300) / 2 + 15,
+                    (getHeight() - 250) / 2 + 180,
+                    300, 35);
+                placeholderPassword.setForeground(new Color(140, 160, 190));
+                placeholderPassword.setFont(new Font("Arial", Font.PLAIN, 13));
+
+                botonLogin.setBounds((getWidth() - 350) / 2, (getHeight() - 50) / 2 + 180, 350, 45);
+
+                FontMetrics fmAcceso = Acceso.getFontMetrics(new Font("Arial", Font.PLAIN, 12));
+                int anchoAcceso = fmAcceso.stringWidth("Clickeame: Solicitar acceso");
+                int altoAcceso = fmAcceso.getAscent();
+                Acceso.setBounds((getWidth() - anchoAcceso) / 2, (getHeight() - 50) / 2 + 290, anchoAcceso, altoAcceso);
+                Acceso.setForeground(new Color(140, 160, 190));
+                Acceso.setFont(new Font("Arial", Font.PLAIN, 12));
+                Acceso.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                
+                add(Bienvenidos);
+                add(subBienvenidos);
+                add(placeholderPassword);
+                add(errUsu);
+                add(campoUsuario);
+                add(errCol);
+                add(campoColegio);
+                add(errPass);
+                add(campoPassword);
+                add(botonLogin);
+                add(Acceso);
+                inicializacion = true;
+            }
+
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            GradientPaint gradiante = new GradientPaint(0, 0, new Color(35, 60, 100), 0, getHeight(), new Color(5, 10, 30));
+            g2d.setPaint(gradiante);
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+            g2d.setColor(new Color(255, 255, 255, 50));
+            for (Burbuja b : burbujas){
+                g2d.fillOval((int)b.x, (int)b.y, (int)b.tamanio, (int)b.tamanio);
+            }
+            Font fuenteBase = new Font("Arial Black", Font.BOLD, 120);
+            g2d.setFont(fuenteBase);
+            FontMetrics fm = g2d.getFontMetrics();
+            float anchoObjetivo = getWidth() * 0.80f;
+            float escala = anchoObjetivo / fm.stringWidth("SIDINO");
+            int textoX = (int)((getWidth() / escala - fm.stringWidth("SIDINO")) / 2);
+            int textoY = (getHeight() - 1300 / 2);
+            Graphics2D g2Titulo = (Graphics2D) g2d.create();
+            g2Titulo.scale(escala, 1.0);
+            LinearGradientPaint gradiente1 = new LinearGradientPaint(
+                0, 0, (int)(getWidth() / escala), 0,
+                new float[]{0.0f, 0.5f, 1.0f},
+                new Color[]{new Color(0, 180, 195), new Color(80, 210, 220), new Color(0, 180, 195)}
+            );
+            g2Titulo.setPaint(gradiente1);
+            g2Titulo.drawString("SIDINO", textoX, textoY);
+            g2Titulo.dispose();
+            g2d.setColor(new Color(15, 35, 70, 220));
+            g2d.fillRoundRect((getWidth() - 400) / 2, (getHeight() - 400) / 2, 400, 500, 30, 30);
+        }
+    }
+
+    public Login(){
+        setUndecorated(true);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);       
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        Panel panel = new Panel();
+        add(panel);
+        setVisible(true);
+    } 
+}

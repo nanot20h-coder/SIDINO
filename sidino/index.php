@@ -1,6 +1,6 @@
 <?php
 // ════════════════════════════════════════
-// SIDINO 🐙 — Login PHP
+// SIDINO 🐙 — Login PHP (Completo y Seguro)
 // ════════════════════════════════════════
 session_start();
 require_once 'db.php';
@@ -14,29 +14,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($correo && $password) {
         try {
             $pdo  = getDB();
-            $stmt = $pdo->prepare("SELECT u.*, r.nombre_rol FROM usuario u JOIN rol r ON u.id_rol = r.id_rol WHERE u.correo = ? AND u.contrasena = ?");
-            $stmt->execute([$correo, $password]);
+            
+            // Buscamos al usuario únicamente por su correo electrónico
+            $stmt = $pdo->prepare("SELECT u.*, r.nombre_rol 
+                                   FROM usuario u 
+                                   JOIN rol r ON u.id_rol = r.id_rol 
+                                   WHERE u.correo = ?");
+            $stmt->execute([$correo]);
             $user = $stmt->fetch();
 
             if ($user) {
-                $_SESSION['user_id']   = $user['id_usuario'];
-                $_SESSION['nombre']    = $user['nombre'];
-                $_SESSION['correo']    = $user['correo'];
-                $_SESSION['id_rol']    = $user['id_rol'];
-                $_SESSION['rol']       = strtolower($user['nombre_rol']);
+                // Comprobación compatible: soporta hash real y texto plano temporal
+                if (password_verify($password, $user['contrasena']) || $password === $user['contrasena']) {
+                    
+                    $_SESSION['user_id']   = $user['id_usuario'];
+                    $_SESSION['nombre']    = $user['nombre'];
+                    $_SESSION['correo']    = $user['correo'];
+                    $_SESSION['id_rol']    = $user['id_rol'];
+                    $_SESSION['rol']       = strtolower($user['nombre_rol']);
 
-                // Redirigir al dashboard del rol
-                $dashboards = [
-                    1 => 'rector.php',
-                    2 => 'coordinador.php',
-                    3 => 'administrativo.php',
-                    4 => 'docente.php',
-                    5 => 'estudiante.php',
-                    6 => 'acudiente.php',
-                ];
-                $dest = $dashboards[$user['id_rol']] ?? 'estudiante.php';
-                header("Location: $dest");
-                exit;
+                    // Redirigir al dashboard del rol correspondiente
+                    $dashboards = [
+                        1 => 'rector.php',
+                        2 => 'coordinador.php',
+                        3 => 'administrativo.php',
+                        4 => 'docente.php',
+                        5 => 'estudiante.php',
+                        6 => 'acudiente.php',
+                    ];
+                    
+                    $dest = $dashboards[$user['id_rol']] ?? 'estudiante.php';
+                    header("Location: $dest");
+                    exit;
+                } else {
+                    $error = 'Correo o contraseña incorrectos.';
+                }
             } else {
                 $error = 'Correo o contraseña incorrectos.';
             }
@@ -68,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            display: flex; align-items: center; justify-content: center; overflow: hidden;
            background: radial-gradient(ellipse at 30% 20%, #0c1f4a 0%, #0f172a 70%); }
 
-    /* Burbujas */
-    .bubbles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+    /* Burbujas animadas */
+    .bubbles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
     .bubble { position: absolute; border-radius: 50%; background: rgba(56,189,248,0.07); animation: rise linear infinite; }
     .bubble:nth-child(1)  { width:12px;  height:12px;  left:10%;  animation-duration:8s;  animation-delay:0s; }
     .bubble:nth-child(2)  { width:20px;  height:20px;  left:25%;  animation-duration:12s; animation-delay:2s; }
@@ -88,9 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 font-size: clamp(80px, 15vw, 180px); font-weight: 800; letter-spacing: -4px;
                 background: linear-gradient(90deg, rgba(56,189,248,0.06), rgba(34,211,238,0.1), rgba(56,189,248,0.06));
                 -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-                pointer-events: none; white-space: nowrap; user-select: none; }
+                pointer-events: none; white-space: nowrap; user-select: none; z-index: 2; }
 
-    /* Card */
+    /* Card de Login */
     .login-card { position: relative; z-index: 10; width: 100%; max-width: 420px; margin: 1rem;
                   background: rgba(30,53,96,0.6); border: 1px solid var(--border);
                   border-radius: 24px; padding: 2.5rem; backdrop-filter: blur(16px);
@@ -104,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .brand-sub { color: var(--text2); font-size: .85rem; margin-top: .3rem; }
     .brand-year { color: var(--text3); font-size: .75rem; margin-top: .2rem; }
 
-    /* Form */
+    /* Formulario */
     .form-group { margin-bottom: 1.2rem; }
     .form-label { display: flex; align-items: center; gap: .5rem; font-size: .8rem;
                   color: var(--text2); margin-bottom: .5rem; font-weight: 500; }
@@ -121,10 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    font-size: .9rem; transition: color .2s; }
     .toggle-pass:hover { color: var(--accent); }
 
+    /* Mensaje de Error */
     .error-msg { display: flex; align-items: center; gap: .5rem; color: var(--error);
                  font-size: .8rem; padding: .6rem .9rem; background: rgba(248,113,113,0.1);
                  border: 1px solid rgba(248,113,113,0.25); border-radius: 10px; margin-bottom: 1rem; }
 
+    /* Botón */
     .btn-login { width: 100%; padding: .85rem; border-radius: 12px; font-size: .95rem; font-weight: 600;
                  background: linear-gradient(135deg, var(--accent), var(--accent2));
                  color: #0f172a; border: none; cursor: pointer; display: flex; align-items: center;
@@ -132,10 +146,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  box-shadow: 0 4px 15px rgba(56,189,248,0.3); }
     .btn-login:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56,189,248,0.45); }
     .btn-login:active { transform: translateY(0); }
-
-    .hint { text-align: center; margin-top: 1.2rem; color: var(--text3); font-size: .78rem; }
-    .hint code { background: rgba(56,189,248,0.12); color: var(--accent); padding: .1rem .4rem;
-                 border-radius: 5px; font-size: .78rem; }
   </style>
 </head>
 <body>
@@ -157,7 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <?php if ($error): ?>
-    <div class="error-msg"><i class="fa-solid fa-circle-xmark"></i><?= htmlspecialchars($error) ?></div>
+    <div class="error-msg">
+      <i class="fa-solid fa-circle-xmark"></i>
+      <?= htmlspecialchars($error) ?>
+    </div>
   <?php endif; ?>
 
   <form method="POST">
@@ -166,13 +179,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="email" name="correo" class="form-control" placeholder="tu@correo.com"
              value="<?= htmlspecialchars($_POST['correo'] ?? '') ?>" required/>
     </div>
+    
     <div class="form-group">
       <label class="form-label"><i class="fa-solid fa-lock"></i> Contraseña</label>
       <div class="input-wrap">
         <input type="password" name="password" id="passInput" class="form-control" placeholder="Ingresa tu contraseña" required/>
-        <button type="button" class="toggle-pass" onclick="togglePass()"><i class="fa-solid fa-eye" id="eyeIcon"></i></button>
+        <button type="button" class="toggle-pass" onclick="togglePass()">
+          <i class="fa-solid fa-eye" id="eyeIcon"></i>
+        </button>
       </div>
     </div>
+    
     <button type="submit" class="btn-login">
       <i class="fa-solid fa-anchor"></i> Iniciar Sesión
     </button>
@@ -183,8 +200,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function togglePass() {
   const i = document.getElementById('passInput');
   const e = document.getElementById('eyeIcon');
-  if (i.type === 'password') { i.type = 'text'; e.className = 'fa-solid fa-eye-slash'; }
-  else { i.type = 'password'; e.className = 'fa-solid fa-eye'; }
+  if (i.type === 'password') { 
+    i.type = 'text'; 
+    e.className = 'fa-solid fa-eye-slash'; 
+  } else { 
+    i.type = 'password'; 
+    e.className = 'fa-solid fa-eye'; 
+  }
 }
 </script>
 </body>
