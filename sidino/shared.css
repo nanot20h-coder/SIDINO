@@ -17,7 +17,7 @@
   --accent4:      #fb923c;
   --accent5:      #f87171;
   --accent6:      #fbbf24;
-  --text:         #e0f2fe;
+  --text:         #87caf7;
   --text2:        #7dd3fc;
   --text3:        #4b7fa8;
   --sidebar-w:    245px;
@@ -66,7 +66,7 @@ ul { list-style: none; }
 .brand-text { display: flex; flex-direction: column; flex: 1; }
 .brand-name { font-size: 1rem; font-weight: 800; letter-spacing: 2px;
               background: linear-gradient(90deg, var(--accent), var(--accent2));
-              -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+              background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .brand-year { font-size: .68rem; color: var(--text3); }
 .sidebar-toggle { color: var(--text3); font-size: .9rem; padding: .3rem; border-radius: 8px;
                   transition: color .2s, background .2s; margin-left: auto; }

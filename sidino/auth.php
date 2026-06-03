@@ -117,6 +117,59 @@ function toggleSidebar() {
   s.classList.toggle('collapsed');
   if (m) m.classList.toggle('expanded');
 }
+  // Cambiar tema
+  html.setAttribute('data-theme', newTheme);
+  
+  // Actualizar icono y texto
+  if (newTheme === 'light') {
+    themeIcon.className = 'fa-solid fa-sun';
+    themeText.textContent = 'Modo claro';
+    localStorage.setItem('theme', 'light');
+  } else {
+    themeIcon.className = 'fa-solid fa-moon';
+    themeText.textContent = 'Modo oscuro';
+    localStorage.setItem('theme', 'dark');
+  }
+}
+
+// Restaurar estado de la sidebar y tema
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+  const html = document.documentElement;
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  const isMobile = window.innerWidth <= 1024;
+  
+  // Restaurar tema guardado
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    html.setAttribute('data-theme', savedTheme);
+    if (savedTheme === 'light') {
+      themeIcon.className = 'fa-solid fa-sun';
+      themeText.textContent = 'Modo claro';
+    } else {
+      themeIcon.className = 'fa-solid fa-moon';
+      themeText.textContent = 'Modo oscuro';
+    }
+  }function toggleTheme() {
+  const html = document.documentElement;
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  
+  // Restaurar estado de sidebar
+  if (!isMobile) {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState === 'true') {
+      sidebar.classList.add('collapsed');
+      if (mainContent) {
+        mainContent.classList.add('expanded');
+      }
+    }
+  }
 </script>
 </body></html>";
 }
