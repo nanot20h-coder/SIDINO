@@ -11,8 +11,8 @@ function rector_nav(string $activo): array {
         ['id'=>'usuarios',     'href'=>'usuarios.php',             'icon'=>'fa-users',          'label'=>'Usuarios'],
         ['id'=>'crear_usuario','href'=>'crear_usuario.php',        'icon'=>'fa-user-plus',      'label'=>'Crear Usuario'],
         ['id'=>'asignar_profesor','href'=>'asignar_profesor.php',  'icon'=>'fa-chalkboard-user','label'=>'Asignar Profesor'],
-        
-        ['id'=>'historial',    'href'=>'historial.php',            'icon'=>'fa-clock-rotate-left','label'=>'Historial'],
+        ['id'=>'asignar_estudiante','href'=>'asignar_estudiante.php',         'icon'=>'fa-user-graduate','label'=>'Asignar Estudiante'],
+        ['id'=>'generar_clase','href'=>'generar_clase.php',                   'icon'=>'fa-chalkboard','label'=>'Generar Clase'],
         ['id'=>'reportes',     'href'=>'reportes.php',             'icon'=>'fa-chart-bar',      'label'=>'Reportes'],
     
     ];

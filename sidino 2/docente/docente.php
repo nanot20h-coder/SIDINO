@@ -10,24 +10,22 @@ $msg = '';
 
 // 1. Ingreso de nota desde generar_nota.php O desde el formulario interno
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['registrar_nota']) || (isset($_POST['origen']) && $_POST['origen'] === 'generar_nota'))) {
-    // Si viene de generar_nota.php externo, mapeamos los datos simulados o capturamos el id si aplica
-    // Nota: Para producción, lo ideal es usar el id_matricula del select interno.
-    $id_mat = isset($_POST['id_matricula']) ? (int)$_POST['id_matricula'] : 1; 
-    $valor  = isset($_POST['nota']) ? (float)$_POST['nota'] : (float)str_replace(',', '.', $_POST['valor']);
+    $id_mat = (int)($_POST['id_matricula'] ?? 0);
+    $valor  = (float)str_replace(',', '.', $_POST['valor'] ?? $_POST['nota'] ?? '');
     $tipo   = isset($_POST['tipo']) ? trim($_POST['tipo']) : 'Actividad Externa';
     $porc   = isset($_POST['porcentaje']) ? (float)$_POST['porcentaje'] : 20.0;
     $fecha  = $_POST['fecha'] ?? date('Y-m-d');
 
-    // Forzar escala a 0-5 si el formulario externo envió base 100
-    if ($valor > 5) { $valor = $valor / 20; }
+    $matricula_check = $pdo->prepare("SELECT COUNT(*) FROM matricula mat JOIN asignacion_academica aa ON mat.id_asignacion = aa.id_asignacion WHERE mat.id_matricula = ? AND aa.id_docente = ?");
+    $matricula_check->execute([$id_mat, $id_docente]);
 
-    if ($id_mat && $valor >= 0 && $valor <= 5 && $tipo && $porc > 0 && $fecha) {
+    if ($matricula_check->fetchColumn() && $valor >= 0 && $valor <= 5 && $tipo && $porc > 0 && $porc <= 100 && $fecha) {
         try {
             $pdo->prepare("INSERT INTO nota (id_matricula, valor, tipo, porcentaje, fecha) VALUES (?,?,?,?,?)")
                 ->execute([$id_mat, $valor, $tipo, $porc, $fecha]);
             $msg = 'success:Nota registrada correctamente en el sistema.';
             // Forzar redirección limpia a la pestaña de notas para ver los cambios
-            header("Location: docente.php?m=notas&msg_success=Nota registrada con éxito");
+            header("Location: generar_nota.php?msg_success=Nota registrada con éxito");
             exit;
         } catch (Exception $e) {
             $msg = 'error:Error en la base de datos al guardar la nota.';
@@ -207,15 +205,24 @@ $meses = [
 ];
 
 $color = '#20a7e0';
+$pagina_actual = basename($_SERVER['PHP_SELF']);
+$menu_activo = [
+  'horario.php' => 'horario',
+  'asistencia.php' => 'asistencia',
+  'generar_nota.php' => 'notas',
+  'observador.php' => 'observador',
+  'contenido.php' => 'contenido',
+][$pagina_actual] ?? 'dashboard';
 layout_head('Docente — Dashboard');
 
 echo "<div class='app'>";
-echo sidebar_html('dashboard', [
-    ['id'=>'dashboard',  'href'=>'docente.php',                'icon'=>'fa-gauge',       'label'=>'Dashboard'],
-    ['id'=>'horario',    'href'=>'docente.php?m=horario',      'icon'=>'fa-calendar-days','label'=>'Mis clases'],
-    ['id'=>'notas',      'href'=>'docente.php?m=notas',        'icon'=>'fa-star',        'label'=>'Registrar notas'],
-    ['id'=>'observador', 'href'=>'docente.php?m=observador',   'icon'=>'fa-book-open',   'label'=>'Observador'],
-    ['id'=>'contenido',  'href'=>'docente.php?m=contenido',    'icon'=>'fa-folder-open', 'label'=>'Contenido'],
+echo sidebar_html($menu_activo, [
+  ['id'=>'dashboard',  'href'=>'docente.php',       'icon'=>'fa-gauge',        'label'=>'Dashboard'],
+  ['id'=>'asistencia', 'href'=>'asistencia.php',    'icon'=>'fa-user-check',  'label'=>'Asistencia'],
+  ['id'=>'horario',    'href'=>'horario.php',       'icon'=>'fa-calendar-days','label'=>'Mis clases'],
+  ['id'=>'notas',      'href'=>'generar_nota.php',         'icon'=>'fa-star',         'label'=>'Registrar notas'],
+  ['id'=>'observador', 'href'=>'observador.php',    'icon'=>'fa-book-open',    'label'=>'Observador'],
+  ['id'=>'contenido',  'href'=>'contenido.php',     'icon'=>'fa-folder-open',  'label'=>'Contenido'],
 ]);
 
 echo "<div class='main-content' id='mainContent'>";
@@ -268,7 +275,7 @@ if ($modulo === 'dashboard'):
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="fa-solid fa-calendar-days"></i> Mis clases</div>
-      <a href="docente.php?m=horario" class="card-action">Ver horario</a>
+      <a href="horario.php" class="card-action">Ver horario</a>
     </div>
     <?php if(empty($asignaciones)): ?>
       <div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No tienes clases asignadas aún</p></div>
@@ -289,7 +296,7 @@ if ($modulo === 'dashboard'):
   <div class="card">
     <div class="card-header">
       <div class="card-title"><i class="fa-solid fa-star"></i> Notas recientes</div>
-      <a href="docente.php?m=notas" class="card-action">Registrar nota</a>
+      <a href="generar_nota.php" class="card-action">Registrar nota</a>
     </div>
     <?php if(empty($notas)): ?>
       <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No has registrado notas aún</p></div>
@@ -602,7 +609,7 @@ if ($modulo === 'dashboard'):
 <?php if(!empty($matriculas_form)): ?>
 <div class="card" style="margin-bottom:1.25rem">
   <div class="card-title" style="margin-bottom:1rem"><i class="fa-solid fa-plus"></i> Nueva nota académica</div>
-  <form method="POST">
+  <form method="POST" action="generar_nota.php">
     <div class="form-inline">
       <div class="field-group">
         <label class="field-label">Estudiante / Materia</label>

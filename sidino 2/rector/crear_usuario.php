@@ -2,6 +2,7 @@
 require_once __DIR__ . '/rector_common.php';
 $msg = '';
 $tipo = '';
+$id_sesion = (int)($_SESSION['user_id'] ?? 0);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre = trim($_POST['nombre'] ?? '');
     $correo = trim($_POST['correo'] ?? '');
@@ -16,8 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insert = $pdo->prepare('INSERT INTO usuario (nombre, correo, contrasena, id_rol) VALUES (?, ?, ?, ?)');
             $insert->execute([$nombre, $correo, password_hash($pass, PASSWORD_DEFAULT), $rol]);
             $nuevo_id = $pdo->lastInsertId();
-            $hist = $pdo->prepare("INSERT INTO historial_accion (id_usuario, accion, tabla_afectada) VALUES (?, ?, 'usuario')");
-            $hist->execute([$_SESSION['id_usuario'] ?? $_SESSION['id'] ?? $_SESSION['usuario_id'], "Creó usuario: $nombre (ID $nuevo_id)"]);
+            if ($id_sesion > 0) {
+                $hist = $pdo->prepare("INSERT INTO historial_accion (id_usuario, accion, tabla_afectada) VALUES (?, ?, 'usuario')");
+                $hist->execute([$id_sesion, "Creó usuario: $nombre (ID $nuevo_id)"]);
+            }
             $msg = "Usuario «{$nombre}» creado exitosamente (ID: {$nuevo_id})."; $tipo = 'success';
         }
     }

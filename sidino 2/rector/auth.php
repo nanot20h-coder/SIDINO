@@ -66,7 +66,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
       </div>
       <nav class='sidebar-nav'>{$nav_html}</nav>
       <div class='sidebar-footer'>
-        <a href='logout.php' class='btn-logout'>
+        <a href='../logout.php' class='btn-logout'>
           <i class='fa-solid fa-right-from-bracket'></i>
           <span>Cerrar Sesión</span>
         </a>
