@@ -1,0 +1,5 @@
+<?php
+require_once __DIR__ . '/rector_common.php';
+$stats = rector_stats($pdo);
+rector_layout_start('Reportes Generales', 'reportes');
+?><div class="section-title"><i class="fa-solid fa-chart-bar"></i> Reportes Generales</div><div class="stats-grid"><?php foreach ([['blue','fa-users',$stats['usuarios'],'Usuarios totales'],['green','fa-user-graduate',$stats['estudiantes'],'Estudiantes'],['orange','fa-chalkboard-user',$stats['docentes'],'Docentes'],['purple','fa-door-open',$stats['cursos'],'Cursos activos']] as [$clase,$icono,$valor,$etiqueta]): ?><div class="stat-card"><div class="stat-icon <?= $clase ?>"><i class="fa-solid <?= $icono ?>"></i></div><div class="stat-body"><div class="stat-value"><?= $valor ?></div><div class="stat-label"><?= $etiqueta ?></div></div></div><?php endforeach; ?></div><div class="alert info"><i class="fa-solid fa-circle-info"></i> Los reportes avanzados con gráficas estarán disponibles cuando se registren notas en el sistema.</div><?php rector_layout_end(); ?>
