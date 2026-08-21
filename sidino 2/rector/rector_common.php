@@ -14,6 +14,7 @@ function rector_nav(string $activo): array {
         ['id'=>'asignar_estudiante','href'=>'asignar_estudiante.php',         'icon'=>'fa-user-graduate','label'=>'Asignar Estudiante'],
         ['id'=>'generar_clase','href'=>'generar_clase.php',                   'icon'=>'fa-chalkboard','label'=>'Generar Clase'],
         ['id'=>'reportes',     'href'=>'reportes.php',             'icon'=>'fa-chart-bar',      'label'=>'Reportes'],
+        ['id'=> 'quitar asignaciones', 'href'=>'eleminar_asignaciones.php', 'icon'=>'fa-trash', 'label'=>'Quitar Asignaciones'],
     
     ];
 }
