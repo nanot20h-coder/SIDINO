@@ -1,18 +1,17 @@
 <?php
-
+// ════════════════════════════════════════
+// SIDINO 🐙 — Auth guard + layout helper
+// ════════════════════════════════════════
 session_start();
 require_once __DIR__ . '/db.php';
 
-// Roles permitidos se pasan como argumento
-// Uso: require_auth([1]) — solo rector
-//       require_auth([1,2]) — rector y coordinador
 function require_auth(array $roles_permitidos = []) {
     if (empty($_SESSION['user_id'])) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
     if (!empty($roles_permitidos) && !in_array($_SESSION['id_rol'], $roles_permitidos)) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
 }
@@ -30,7 +29,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
         'acudiente'      => '#a78bfa',
     ];
     $rolKey = strtolower($_SESSION['rol'] ?? '');
-    $color  = $color_map[$rolKey] ?? '#38bdf8';
+    $color  = $color_map[$rolKey] ?? '#34d399';
 
     $nav_html = '';
     foreach ($nav as $item) {
@@ -71,7 +70,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
     </aside>";
 }
 
-function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#38bdf8'): string {
+function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#34d399'): string {
     $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Usuario');
     $avatar = strtoupper(substr($_SESSION['nombre'] ?? 'U', 0, 1));
     return "
@@ -140,18 +139,13 @@ function applyTheme(theme) {
   themeText.textContent = theme === 'light' ? 'Modo claro' : 'Modo oscuro';
 }
 
-// Restaurar estado de la sidebar y tema
 document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.getElementById('sidebar');
   const mainContent = document.getElementById('mainContent');
-  const html = document.documentElement;
   const isMobile = window.innerWidth <= 768;
-  
-  // Restaurar tema guardado
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'light' || savedTheme === 'dark') applyTheme(savedTheme);
 
-  // Restaurar estado de sidebar
   if (!isMobile) {
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState === 'true') {

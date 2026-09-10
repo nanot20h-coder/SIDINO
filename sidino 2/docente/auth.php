@@ -84,6 +84,9 @@ function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#38bdf8'
         <div class='breadcrumb'><i class='fa-solid fa-house'></i> {$titulo}</div>
       </div>
       <div class='topbar-right'>
+        <button class='theme-toggle' type='button' onclick='toggleTheme()' aria-label='Cambiar tema' title='Cambiar tema'>
+          <i id='themeIcon' class='fa-solid fa-moon'></i><span id='themeText'>Modo oscuro</span>
+        </button>
         <div class='topbar-user'>
           <span class='topbar-name'>{$nombre}</span>
           <div class='topbar-avatar' style='background:linear-gradient(135deg,{$rol_color},rgba(15,23,42,0.6))'>{$avatar}</div>
@@ -114,22 +117,30 @@ function layout_close(): void {
 function toggleSidebar() {
   const s = document.getElementById('sidebar');
   const m = document.getElementById('mainContent');
+
+  if (window.innerWidth <= 768) {
+    const isOpen = s.classList.toggle('mobile-open');
+    s.style.transform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
+    return;
+  }
+
   s.classList.toggle('collapsed');
   if (m) m.classList.toggle('expanded');
 }
-  // Cambiar tema
-  html.setAttribute('data-theme', newTheme);
-  
-  // Actualizar icono y texto
-  if (newTheme === 'light') {
-    themeIcon.className = 'fa-solid fa-sun';
-    themeText.textContent = 'Modo claro';
-    localStorage.setItem('theme', 'light');
-  } else {
-    themeIcon.className = 'fa-solid fa-moon';
-    themeText.textContent = 'Modo oscuro';
-    localStorage.setItem('theme', 'dark');
-  }
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const newTheme = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(newTheme);
+  localStorage.setItem('theme', newTheme);
+}
+
+function applyTheme(theme) {
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  document.documentElement.setAttribute('data-theme', theme);
+  themeIcon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  themeText.textContent = theme === 'light' ? 'Modo claro' : 'Modo oscuro';
 }
 
 // Restaurar estado de la sidebar y tema
@@ -137,29 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.getElementById('sidebar');
   const mainContent = document.getElementById('mainContent');
   const html = document.documentElement;
-  const themeIcon = document.getElementById('themeIcon');
-  const themeText = document.getElementById('themeText');
-  const isMobile = window.innerWidth <= 1024;
+  const isMobile = window.innerWidth <= 768;
   
   // Restaurar tema guardado
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    html.setAttribute('data-theme', savedTheme);
-    if (savedTheme === 'light') {
-      themeIcon.className = 'fa-solid fa-sun';
-      themeText.textContent = 'Modo claro';
-    } else {
-      themeIcon.className = 'fa-solid fa-moon';
-      themeText.textContent = 'Modo oscuro';
-    }
-  }function toggleTheme() {
-  const html = document.documentElement;
-  const themeIcon = document.getElementById('themeIcon');
-  const themeText = document.getElementById('themeText');
-  const currentTheme = html.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  
-  
+  if (savedTheme === 'light' || savedTheme === 'dark') applyTheme(savedTheme);
+
   // Restaurar estado de sidebar
   if (!isMobile) {
     const savedState = localStorage.getItem('sidebarCollapsed');
@@ -169,7 +163,12 @@ document.addEventListener('DOMContentLoaded', function() {
         mainContent.classList.add('expanded');
       }
     }
+  } else {
+    sidebar.classList.remove('collapsed');
+    sidebar.style.transform = 'translateX(-100%)';
+    sidebar.classList.remove('mobile-open');
   }
+});
 </script>
 </body></html>";
 }

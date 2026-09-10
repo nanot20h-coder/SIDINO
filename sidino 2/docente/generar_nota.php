@@ -12,6 +12,7 @@ layout_head('Docente — Generar Nota');
 echo "<div class='app'>";
 echo sidebar_html('notas', [
         ['id'=>'dashboard', 'href'=>'docente.php', 'icon'=>'fa-gauge', 'label'=>'Dashboard'],
+        ['id'=>'asistencia', 'href'=>'asistencia.php',    'icon'=>'fa-user-check',  'label'=>'Asistencia'],
         ['id'=>'horario', 'href'=>'horario.php', 'icon'=>'fa-calendar-days', 'label'=>'Mis clases'],
         ['id'=>'notas', 'href'=>'generar_nota.php', 'icon'=>'fa-star', 'label'=>'Registrar notas'],
         ['id'=>'observador', 'href'=>'observador.php', 'icon'=>'fa-book-open', 'label'=>'Observador'],

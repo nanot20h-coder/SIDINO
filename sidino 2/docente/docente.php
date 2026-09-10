@@ -7,6 +7,40 @@ $pdo = getDB();
 $id_docente = $_SESSION['user_id'];
 $msg = '';
 
+function ensureContenidoActivityColumns(PDO $pdo): void {
+    $columns = $pdo->query("SHOW COLUMNS FROM contenido")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('tipo', $columns, true)) {
+        $pdo->exec("ALTER TABLE contenido ADD COLUMN tipo VARCHAR(30) NOT NULL DEFAULT 'material' AFTER archivo");
+    }
+    if (!in_array('fecha_entrega', $columns, true)) {
+        $pdo->exec("ALTER TABLE contenido ADD COLUMN fecha_entrega DATE NULL AFTER tipo");
+    }
+}
+
+ensureContenidoActivityColumns($pdo);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar_actividad'])) {
+    $id_asignacion = (int)($_POST['id_asignacion'] ?? 0);
+    $titulo = trim($_POST['titulo'] ?? '');
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $fecha_entrega = $_POST['fecha_entrega'] ?? null;
+
+    if ($id_asignacion && $titulo && $descripcion) {
+        $check = $pdo->prepare('SELECT COUNT(*) FROM asignacion_academica WHERE id_asignacion = ? AND id_docente = ?');
+        $check->execute([$id_asignacion, $id_docente]);
+
+        if ($check->fetchColumn()) {
+            $stmt = $pdo->prepare('INSERT INTO contenido (titulo, descripcion, archivo, tipo, fecha_entrega, id_asignacion) VALUES (?, ?, NULL, ?, ?, ?)');
+            $stmt->execute([$titulo, $descripcion, 'actividad', $fecha_entrega ?: null, $id_asignacion]);
+            $msg = 'success:Actividad publicada correctamente. Los estudiantes ya pueden verla desde la clase.';
+        } else {
+            $msg = 'error:La clase seleccionada no está asignada a este docente.';
+        }
+    } else {
+        $msg = 'error:Completa el título, la clase y la descripción de la actividad.';
+    }
+}
+
 
 // 1. Ingreso de nota desde generar_nota.php O desde el formulario interno
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['registrar_nota']) || (isset($_POST['origen']) && $_POST['origen'] === 'generar_nota'))) {
@@ -100,17 +134,31 @@ if (!empty($ids_asig)) {
     ")->fetchAll();
 }
 
-// Contenidos subidos
+// Actividades y contenidos subidos
+$actividades = [];
 $contenidos = [];
 if (!empty($ids_asig)) {
     $ph = implode(',', $ids_asig);
-    $contenidos = $pdo->query("
-        SELECT co.titulo, co.descripcion, co.archivo, m.nombre AS materia
+    $actividades = $pdo->query("
+        SELECT co.id_contenido, co.titulo, co.descripcion, co.archivo, co.tipo, co.fecha_entrega,
+               m.nombre AS materia, c.nombre AS curso
         FROM contenido co
         JOIN asignacion_academica aa ON co.id_asignacion = aa.id_asignacion
         JOIN materia m ON aa.id_materia = m.id_materia
+        JOIN curso c ON aa.id_curso = c.id_curso
+        WHERE co.id_asignacion IN ($ph) AND co.tipo = 'actividad'
+        ORDER BY co.fecha_entrega IS NULL, co.fecha_entrega DESC, co.id_contenido DESC
+    ")->fetchAll();
+
+    $contenidos = $pdo->query("
+        SELECT co.id_contenido, co.titulo, co.descripcion, co.archivo, co.tipo, co.fecha_entrega,
+               m.nombre AS materia, c.nombre AS curso
+        FROM contenido co
+        JOIN asignacion_academica aa ON co.id_asignacion = aa.id_asignacion
+        JOIN materia m ON aa.id_materia = m.id_materia
+        JOIN curso c ON aa.id_curso = c.id_curso
         WHERE co.id_asignacion IN ($ph)
-        ORDER BY co.id_contenido DESC LIMIT 15
+        ORDER BY co.id_contenido DESC LIMIT 30
     ")->fetchAll();
 }
 
@@ -741,20 +789,83 @@ if ($modulo === 'dashboard'):
 
 
 <?php elseif($modulo === 'contenido'): ?>
-<div class="section-title"><i class="fa-solid fa-folder-open"></i> Contenido Académico</div>
+<div class="section-title"><i class="fa-solid fa-folder-open"></i> Contenido y actividades académicas</div>
+
+<div class="card" style="margin-bottom:1.25rem;">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-clipboard-list"></i> Publicar nueva actividad</div>
+  </div>
+  <form method="POST" action="contenido.php?m=contenido" style="padding:1.2rem;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;">
+    <div class="field-group" style="grid-column:1 / -1;">
+      <label class="field-label">Título de la actividad</label>
+      <input type="text" name="titulo" class="field-input" placeholder="Ej: Taller de lectura y análisis" required>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Clase asignada</label>
+      <select name="id_asignacion" class="field-input" required>
+        <option value="">Seleccionar clase...</option>
+        <?php foreach($asignaciones as $asignacion): ?>
+          <option value="<?= $asignacion['id_asignacion'] ?>"><?= htmlspecialchars($asignacion['materia']) ?> · <?= htmlspecialchars($asignacion['curso']) ?> (<?= htmlspecialchars($asignacion['dia']) ?>)</option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Fecha de entrega</label>
+      <input type="date" name="fecha_entrega" class="field-input">
+    </div>
+    <div class="field-group" style="grid-column:1 / -1;">
+      <label class="field-label">Descripción de la actividad</label>
+      <textarea name="descripcion" class="field-input" rows="5" placeholder="Describe la actividad, instrucciones, recursos o criterio de evaluación..." required></textarea>
+    </div>
+    <div style="grid-column:1 / -1;display:flex;gap:.8rem;align-items:center;">
+      <button type="submit" name="guardar_actividad" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Publicar actividad</button>
+      <span style="color:var(--text-muted);font-size:0.8rem;">Visible para los estudiantes de la clase asignada.</span>
+    </div>
+  </form>
+</div>
+
 <div class="card">
-  <?php if(empty($contenidos)): ?>
-    <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No has subido contenidos aún</p></div>
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-list-check"></i> Actividades publicadas</div>
+  </div>
+  <?php if(empty($actividades)): ?>
+    <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Aún no has publicado actividades para tus estudiantes.</p></div>
   <?php else: ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Título</th><th>Materia</th><th>Descripción</th></tr></thead>
+      <thead><tr><th>Clase</th><th>Título</th><th>Descripción</th><th>Entrega</th></tr></thead>
+      <tbody>
+      <?php foreach($actividades as $actividad): ?>
+        <tr>
+          <td><span class="badge blue"><?= htmlspecialchars($actividad['curso']) ?></span><br><?= htmlspecialchars($actividad['materia']) ?></td>
+          <td><?= htmlspecialchars($actividad['titulo']) ?></td>
+          <td><?= htmlspecialchars(substr($actividad['descripcion'] ?? '', 0, 100)) ?><?= strlen($actividad['descripcion'] ?? '') > 100 ? '...' : '' ?></td>
+          <td><?= $actividad['fecha_entrega'] ? date('d/m/Y', strtotime($actividad['fecha_entrega'])) : 'Sin fecha' ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <?php endif; ?>
+</div>
+
+<div class="card" style="margin-top:1.25rem;">
+  <div class="card-header">
+    <div class="card-title"><i class="fa-solid fa-book-open-reader"></i> Materiales y recursos</div>
+  </div>
+  <?php if(empty($contenidos)): ?>
+    <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No has subido recursos aún.</p></div>
+  <?php else: ?>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Clase</th><th>Título</th><th>Tipo</th><th>Descripción</th></tr></thead>
       <tbody>
       <?php foreach($contenidos as $co): ?>
         <tr>
+          <td><span class="badge blue"><?= htmlspecialchars($co['curso']) ?></span></td>
           <td><?= htmlspecialchars($co['titulo']) ?></td>
-          <td><span class="badge blue"><?= htmlspecialchars($co['materia']) ?></span></td>
-          <td><?= htmlspecialchars(substr($co['descripcion'] ?? '', 0, 80)) ?></td>
+          <td><?= htmlspecialchars($co['tipo'] ?? 'material') ?></td>
+          <td><?= htmlspecialchars(substr($co['descripcion'] ?? '', 0, 90)) ?></td>
         </tr>
       <?php endforeach; ?>
       </tbody>

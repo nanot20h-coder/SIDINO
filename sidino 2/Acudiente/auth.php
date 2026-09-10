@@ -1,21 +1,14 @@
 <?php
-// ════════════════════════════════════════
-// SIDINO 🐙 — Auth guard + layout helper
-// Incluir al inicio de cada dashboard
-// ════════════════════════════════════════
 session_start();
 require_once __DIR__ . '/db.php';
 
-// Roles permitidos se pasan como argumento
-// Uso: require_auth([1]) — solo rector
-//       require_auth([1,2]) — rector y coordinador
 function require_auth(array $roles_permitidos = []) {
     if (empty($_SESSION['user_id'])) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
     if (!empty($roles_permitidos) && !in_array($_SESSION['id_rol'], $roles_permitidos)) {
-        header('Location: index.php');
+        header('Location: ../index.php');
         exit;
     }
 }
@@ -33,7 +26,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
         'acudiente'      => '#a78bfa',
     ];
     $rolKey = strtolower($_SESSION['rol'] ?? '');
-    $color  = $color_map[$rolKey] ?? '#38bdf8';
+    $color  = $color_map[$rolKey] ?? '#a78bfa';
 
     $nav_html = '';
     foreach ($nav as $item) {
@@ -66,7 +59,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
       </div>
       <nav class='sidebar-nav'>{$nav_html}</nav>
       <div class='sidebar-footer'>
-        <a href='logout.php' class='btn-logout'>
+        <a href='../logout.php' class='btn-logout'>
           <i class='fa-solid fa-right-from-bracket'></i>
           <span>Cerrar Sesión</span>
         </a>
@@ -74,7 +67,7 @@ function sidebar_html(string $activo = 'dashboard', array $nav = []): string {
     </aside>";
 }
 
-function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#38bdf8'): string {
+function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#a78bfa'): string {
     $nombre = htmlspecialchars($_SESSION['nombre'] ?? 'Usuario');
     $avatar = strtoupper(substr($_SESSION['nombre'] ?? 'U', 0, 1));
     return "
@@ -84,6 +77,9 @@ function topbar_html(string $titulo = 'Dashboard', string $rol_color = '#38bdf8'
         <div class='breadcrumb'><i class='fa-solid fa-house'></i> {$titulo}</div>
       </div>
       <div class='topbar-right'>
+        <button class='theme-toggle' type='button' onclick='toggleTheme()' aria-label='Cambiar tema' title='Cambiar tema'>
+          <i id='themeIcon' class='fa-solid fa-moon'></i><span id='themeText'>Modo oscuro</span>
+        </button>
         <div class='topbar-user'>
           <span class='topbar-name'>{$nombre}</span>
           <div class='topbar-avatar' style='background:linear-gradient(135deg,{$rol_color},rgba(15,23,42,0.6))'>{$avatar}</div>
@@ -102,7 +98,7 @@ function layout_head(string $titulo, string $extra_css = ''): void {
   <link rel='preconnect' href='https://fonts.googleapis.com'/>
   <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap' rel='stylesheet'/>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'/>
-  <link rel='stylesheet' href='shared.css'/>
+  <link rel='stylesheet' href='../shared.css'/>
   {$extra_css}
 </head>
 <body>";
@@ -114,53 +110,39 @@ function layout_close(): void {
 function toggleSidebar() {
   const s = document.getElementById('sidebar');
   const m = document.getElementById('mainContent');
+
+  if (window.innerWidth <= 768) {
+    const isOpen = s.classList.toggle('mobile-open');
+    s.style.transform = isOpen ? 'translateX(0)' : 'translateX(-100%)';
+    return;
+  }
+
   s.classList.toggle('collapsed');
   if (m) m.classList.toggle('expanded');
 }
-  // Cambiar tema
-  html.setAttribute('data-theme', newTheme);
-  
-  // Actualizar icono y texto
-  if (newTheme === 'light') {
-    themeIcon.className = 'fa-solid fa-sun';
-    themeText.textContent = 'Modo claro';
-    localStorage.setItem('theme', 'light');
-  } else {
-    themeIcon.className = 'fa-solid fa-moon';
-    themeText.textContent = 'Modo oscuro';
-    localStorage.setItem('theme', 'dark');
-  }
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const newTheme = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(newTheme);
+  localStorage.setItem('theme', newTheme);
 }
 
-// Restaurar estado de la sidebar y tema
+function applyTheme(theme) {
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  document.documentElement.setAttribute('data-theme', theme);
+  themeIcon.className = theme === 'light' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  themeText.textContent = theme === 'light' ? 'Modo claro' : 'Modo oscuro';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const sidebar = document.getElementById('sidebar');
   const mainContent = document.getElementById('mainContent');
-  const html = document.documentElement;
-  const themeIcon = document.getElementById('themeIcon');
-  const themeText = document.getElementById('themeText');
-  const isMobile = window.innerWidth <= 1024;
-  
-  // Restaurar tema guardado
+  const isMobile = window.innerWidth <= 768;
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    html.setAttribute('data-theme', savedTheme);
-    if (savedTheme === 'light') {
-      themeIcon.className = 'fa-solid fa-sun';
-      themeText.textContent = 'Modo claro';
-    } else {
-      themeIcon.className = 'fa-solid fa-moon';
-      themeText.textContent = 'Modo oscuro';
-    }
-  }function toggleTheme() {
-  const html = document.documentElement;
-  const themeIcon = document.getElementById('themeIcon');
-  const themeText = document.getElementById('themeText');
-  const currentTheme = html.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  
-  
-  // Restaurar estado de sidebar
+  if (savedTheme === 'light' || savedTheme === 'dark') applyTheme(savedTheme);
+
   if (!isMobile) {
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState === 'true') {
@@ -169,7 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
         mainContent.classList.add('expanded');
       }
     }
+  } else {
+    sidebar.classList.remove('collapsed');
+    sidebar.style.transform = 'translateX(-100%)';
+    sidebar.classList.remove('mobile-open');
   }
+});
 </script>
 </body></html>";
 }

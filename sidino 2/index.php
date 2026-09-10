@@ -1,7 +1,5 @@
 <?php
-// ════════════════════════════════════════
-// SIDINO 🐙 — Login PHP (Completo y Seguro)
-// ════════════════════════════════════════
+
 session_start();
 require_once __DIR__ . '/rector/db.php';
 
@@ -39,11 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                       2 => '../sidino/coordinador.php',
                       3 => '../sidino/administrativo.php',
                       4 => 'docente/docente.php',
-                      5 => '../sidino/estudiante.php',
-                      6 => '../sidino/acudiente.php',
+                      5 => 'estudiante/estudiante.php',
+                      6 => 'acudiente/acudiente.php',
                     ];
-                    
-                    $dest = $dashboards[$user['id_rol']] ?? 'estudiante.php';
+
+                    $dest = $dashboards[$user['id_rol']] ?? 'estudiante/estudiante.php';
                     header("Location: $dest");
                     exit;
                 } else {
