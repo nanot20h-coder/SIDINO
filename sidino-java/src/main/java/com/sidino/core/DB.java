@@ -142,13 +142,19 @@ public class DB {
         return creado[0];
     }
 
-    /** Crea una asignación solo si el docente todavía no tiene otra clase. */
+    /** Crea una asignación académica. Las reglas de disponibilidad las gestiona la base de datos. */
     public static long crearAsignacionAcademica(int idDocente, int idMateria, int idCurso,
                                                 int idSalon, int idHorario, int idPeriodo) {
         final long[] id = {0};
         transaccion(con -> {
-            if (contar(con, "SELECT COUNT(*) FROM asignacion_academica WHERE id_docente = ?", idDocente) > 0) {
-                throw new IllegalStateException("El docente ya tiene una clase asignada.");
+            long duplicada = contar(con, """
+                SELECT COUNT(*)
+                FROM asignacion_academica
+                WHERE id_docente = ? AND id_materia = ? AND id_curso = ?
+                  AND id_salon = ? AND id_horario = ? AND id_periodo = ?
+                """, idDocente, idMateria, idCurso, idSalon, idHorario, idPeriodo);
+            if (duplicada > 0) {
+            throw new IllegalStateException("Esa asignación ya existe.");
             }
             id[0] = insertar(con,
                     "INSERT INTO asignacion_academica (id_docente, id_materia, id_curso, id_salon, id_horario, id_periodo) VALUES (?,?,?,?,?,?)",
@@ -157,13 +163,10 @@ public class DB {
         return id[0];
     }
 
-    /** Matricula un estudiante solo si todavía no tiene otra clase. */
+    /** Crea una matrícula. Las reglas de disponibilidad las gestiona la base de datos. */
     public static long crearMatricula(int idEstudiante, int idAsignacion) {
         final long[] id = {0};
         transaccion(con -> {
-            if (contar(con, "SELECT COUNT(*) FROM matricula WHERE id_estudiante = ?", idEstudiante) > 0) {
-                throw new IllegalStateException("El estudiante ya tiene una clase asignada.");
-            }
             id[0] = insertar(con,
                     "INSERT INTO matricula (id_estudiante, id_asignacion) VALUES (?, ?)",
                     idEstudiante, idAsignacion);

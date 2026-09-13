@@ -358,16 +358,11 @@ public class RectorDashboard extends DashboardBase {
             SELECT u.id_usuario, u.nombre
             FROM usuario u
             WHERE u.id_rol = 5
-              AND NOT EXISTS (SELECT 1 FROM matricula mat WHERE mat.id_estudiante = u.id_usuario)
             ORDER BY u.nombre
             """);
         List<Map<String, Object>> asigDisponibles = asignaciones();
 
         if (estudiantes.isEmpty() || asigDisponibles.isEmpty()) {
-            if (estudiantes.isEmpty()) {
-                raiz.add(Estilos.crearAlertaInfo(
-                        "No hay estudiantes disponibles: cada estudiante solo puede estar matriculado en una clase."));
-            }
             if (asigDisponibles.isEmpty()) {
                 raiz.add(Estilos.crearAlertaInfo(
                         "No hay clases disponibles. Crea primero una asignación en la pestaña «Asignaciones»."));
@@ -399,11 +394,6 @@ public class RectorDashboard extends DashboardBase {
             int idEstudiante = ((Number) estudiantes.get(comboEstudiante.getSelectedIndex()).get("id_usuario")).intValue();
             int idAsignacion = ((Number) asigDisponibles.get(comboAsignacion.getSelectedIndex()).get("id_asignacion")).intValue();
 
-            long yaMatriculado = DB.contar("SELECT COUNT(*) FROM matricula WHERE id_estudiante = ?", idEstudiante);
-            if (yaMatriculado > 0) {
-                Dialogos.advertencia(this, "Ese estudiante ya está asignado a otra clase y no puede tener una segunda matrícula.");
-                return;
-            }
             try {
                 long nuevoId = DB.crearMatricula(idEstudiante, idAsignacion);
                 registrarHistorial("Matriculó estudiante (matrícula ID " + nuevoId + ")");
@@ -631,12 +621,11 @@ public class RectorDashboard extends DashboardBase {
     private JPanel panelAsignacionAcademica() {
         JPanel raiz = columna();
 
-                List<Map<String, Object>> docentes = DB.query("""
+            List<Map<String, Object>> docentes = DB.query("""
                         SELECT u.id_usuario, u.nombre
                         FROM usuario u
                         JOIN rol r ON r.id_rol = u.id_rol
                         WHERE LOWER(r.nombre_rol) = 'docente'
-                            AND NOT EXISTS (SELECT 1 FROM asignacion_academica aa WHERE aa.id_docente = u.id_usuario)
                         ORDER BY u.nombre
                         """);
         List<Map<String, Object>> materias = DB.query("SELECT id_materia, nombre FROM materia ORDER BY nombre");
@@ -646,14 +635,6 @@ public class RectorDashboard extends DashboardBase {
         List<Map<String, Object>> periodos = DB.query("SELECT id_periodo, nombre FROM periodo_academico ORDER BY id_periodo DESC");
 
         if (docentes.isEmpty() || materias.isEmpty() || cursos.isEmpty() || salones.isEmpty() || horarios.isEmpty() || periodos.isEmpty()) {
-            StringBuilder mensaje = new StringBuilder("No se puede crear la asignación todavía:\n");
-            if (docentes.isEmpty()) mensaje.append("- No hay docentes disponibles. Verifica que el usuario tenga el rol Docente y que no tenga otra clase.\n");
-            if (materias.isEmpty()) mensaje.append("- Falta crear una materia.\n");
-            if (cursos.isEmpty()) mensaje.append("- Falta crear un curso.\n");
-            if (salones.isEmpty()) mensaje.append("- Falta crear un salón.\n");
-            if (horarios.isEmpty()) mensaje.append("- Falta crear un horario.\n");
-            if (periodos.isEmpty()) mensaje.append("- Falta crear un periodo académico.\n");
-            raiz.add(Estilos.crearAlertaInfo(mensaje.toString()));
             return raiz;
         }
 
@@ -700,14 +681,9 @@ public class RectorDashboard extends DashboardBase {
             int idHorario = ((Number) horarios.get(comboHorario.getSelectedIndex()).get("id_horario")).intValue();
             int idPeriodo = ((Number) periodos.get(comboPeriodo.getSelectedIndex()).get("id_periodo")).intValue();
             try {
-                if (DB.contar("SELECT COUNT(*) FROM asignacion_academica WHERE id_docente = ?", idDocente) > 0) {
-                    Dialogos.advertencia(this, "Ese profesor ya tiene una clase asignada.");
-                    return;
-                }
                 long nuevoId = DB.crearAsignacionAcademica(
                     idDocente, idMateria, idCurso, idSalon, idHorario, idPeriodo);
                 registrarHistorial("Creó asignación académica (ID " + nuevoId + ")");
-                Dialogos.exito(this, "Asignación creada correctamente. Ya puedes matricular estudiantes en esa clase.");
                 refrescarModuloActual();
             } catch (RuntimeException ex) {
                 Dialogos.error(this, "No se pudo crear la asignación:\n" + ex.getMessage());
@@ -733,16 +709,11 @@ public class RectorDashboard extends DashboardBase {
         BotonRedondeado eliminar = new BotonRedondeado("Eliminar seleccionada", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
         eliminar.addActionListener(e -> {
             int seleccion = jTabla.getSelectedRow();
-            if (seleccion < 0) { Dialogos.advertencia(this, "Selecciona una asignación de la tabla."); return; }
+            if (seleccion < 0) return;
             Object id = existentes.get(seleccion).get("id_asignacion");
-            boolean confirmar = Dialogos.confirmar(this,
-                    "¿Eliminar esta asignación?\nSi ya tiene estudiantes matriculados o notas registradas, no se podrá borrar.",
-                    "Sí, eliminar", Estilos.ROJO);
-            if (!confirmar) return;
             try {
                 DB.ejecutar("DELETE FROM asignacion_academica WHERE id_asignacion = ?", id);
                 registrarHistorial("Eliminó asignación académica (ID " + id + ")");
-                Dialogos.exito(this, "Asignación eliminada correctamente.");
                 refrescarModuloActual();
             } catch (RuntimeException ex) {
                 Dialogos.error(this, "No se pudo eliminar: ya tiene estudiantes matriculados, notas u observaciones asociadas.");
