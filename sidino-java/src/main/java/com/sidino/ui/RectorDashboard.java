@@ -233,6 +233,7 @@ public class RectorDashboard extends DashboardBase {
 
     private void eliminarUsuario(Map<String, Object> usuario) {
         int idUsuario = ((Number) usuario.get("id_usuario")).intValue();
+        int idRol = ((Number) usuario.get("id_rol")).intValue();
         if (idUsuario == Sesion.idUsuario) {
             Dialogos.advertencia(this, "No puedes eliminar tu propio usuario.");
             return;
@@ -244,10 +245,13 @@ public class RectorDashboard extends DashboardBase {
         try {
             DB.eliminarUsuario(idUsuario);
             registrarHistorial("Eliminó usuario: " + nombre + " (ID " + idUsuario + ")");
-            Dialogos.exito(this, "Usuario «" + nombre + "» eliminado correctamente.");
+            String mensaje = idRol == 5
+                    ? "Estudiante «" + nombre + "» eliminado correctamente.\nLa clase y el profesor asignado se conservaron para los demás estudiantes."
+                    : "Usuario «" + nombre + "» eliminado correctamente.";
+            Dialogos.exito(this, mensaje);
             mostrarModulo("usuarios");
         } catch (RuntimeException ex) {
-            Dialogos.error(this, "No se pudo eliminar el usuario.\n" + ex.getMessage());
+            Dialogos.error(this, "No se pudo completar la eliminación.\n" + ex.getMessage());
         }
     }
 
@@ -360,10 +364,14 @@ public class RectorDashboard extends DashboardBase {
         List<Map<String, Object>> asigDisponibles = asignaciones();
 
         if (estudiantes.isEmpty() || asigDisponibles.isEmpty()) {
-            StringBuilder faltan = new StringBuilder("Antes de matricular necesitas:\n");
-            if (estudiantes.isEmpty()) faltan.append("• Un estudiante sin matrícula previa (créalo o retira su matrícula actual).\n");
-            if (asigDisponibles.isEmpty()) faltan.append("• Al menos una asignación académica creada (pestaña «Asignaciones»).\n");
-            raiz.add(Estilos.crearAlertaInfo(faltan.toString()));
+            if (estudiantes.isEmpty()) {
+                raiz.add(Estilos.crearAlertaInfo(
+                        "No hay estudiantes disponibles: cada estudiante solo puede estar matriculado en una clase."));
+            }
+            if (asigDisponibles.isEmpty()) {
+                raiz.add(Estilos.crearAlertaInfo(
+                        "No hay clases disponibles. Crea primero una asignación en la pestaña «Asignaciones»."));
+            }
             return raiz;
         }
 
@@ -623,17 +631,14 @@ public class RectorDashboard extends DashboardBase {
     private JPanel panelAsignacionAcademica() {
         JPanel raiz = columna();
 
-        raiz.add(Estilos.crearAlertaInfo(
-            "Un docente solo puede tener una clase asignada y un estudiante solo puede pertenecer a una clase. Los selectores muestran únicamente personas disponibles."));
-        raiz.add(Box.createVerticalStrut(12));
-
-        List<Map<String, Object>> docentes = DB.query("""
-            SELECT u.id_usuario, u.nombre
-            FROM usuario u
-            WHERE u.id_rol = 4
-              AND NOT EXISTS (SELECT 1 FROM asignacion_academica aa WHERE aa.id_docente = u.id_usuario)
-            ORDER BY u.nombre
-            """);
+                List<Map<String, Object>> docentes = DB.query("""
+                        SELECT u.id_usuario, u.nombre
+                        FROM usuario u
+                        JOIN rol r ON r.id_rol = u.id_rol
+                        WHERE LOWER(r.nombre_rol) = 'docente'
+                            AND NOT EXISTS (SELECT 1 FROM asignacion_academica aa WHERE aa.id_docente = u.id_usuario)
+                        ORDER BY u.nombre
+                        """);
         List<Map<String, Object>> materias = DB.query("SELECT id_materia, nombre FROM materia ORDER BY nombre");
         List<Map<String, Object>> cursos = DB.query("SELECT id_curso, nombre FROM curso ORDER BY nombre");
         List<Map<String, Object>> salones = DB.query("SELECT id_salon, nombre FROM salon ORDER BY nombre");
@@ -641,8 +646,14 @@ public class RectorDashboard extends DashboardBase {
         List<Map<String, Object>> periodos = DB.query("SELECT id_periodo, nombre FROM periodo_academico ORDER BY id_periodo DESC");
 
         if (docentes.isEmpty() || materias.isEmpty() || cursos.isEmpty() || salones.isEmpty() || horarios.isEmpty() || periodos.isEmpty()) {
-                raiz.add(Estilos.crearAlertaInfo(
-                    "Antes de crear una asignación necesitas un docente disponible, una materia, un curso, un salón, un horario y un periodo académico."));
+            StringBuilder mensaje = new StringBuilder("No se puede crear la asignación todavía:\n");
+            if (docentes.isEmpty()) mensaje.append("- No hay docentes disponibles. Verifica que el usuario tenga el rol Docente y que no tenga otra clase.\n");
+            if (materias.isEmpty()) mensaje.append("- Falta crear una materia.\n");
+            if (cursos.isEmpty()) mensaje.append("- Falta crear un curso.\n");
+            if (salones.isEmpty()) mensaje.append("- Falta crear un salón.\n");
+            if (horarios.isEmpty()) mensaje.append("- Falta crear un horario.\n");
+            if (periodos.isEmpty()) mensaje.append("- Falta crear un periodo académico.\n");
+            raiz.add(Estilos.crearAlertaInfo(mensaje.toString()));
             return raiz;
         }
 
