@@ -31,8 +31,10 @@ com\sidino\ui\componentes\PanelRedondeado.class
 com\sidino\ui\componentes\Estilos.class
 com\sidino\ui\componentes\RTF$1.class
 com\sidino\ui\AcudienteDashboard.class
+com\sidino\ui\componentes\Iconos$IconoNavegacion.class
 com\sidino\ui\componentes\RTF.class
 com\sidino\ui\RectorDashboard.class
+com\sidino\ui\componentes\Iconos.class
 com\sidino\ui\DashboardBase$ItemNav.class
 com\sidino\ui\PanelAjustes.class
 com\sidino\ui\LoginPanel.class

@@ -1,19 +1,38 @@
 package com.sidino.ui;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.net.URI;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+
 import com.sidino.core.DB;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.BotonRedondeado;
 import com.sidino.ui.componentes.Dialogos;
 import com.sidino.ui.componentes.Estilos;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.awt.Desktop;
-import java.net.URI;
 
 public class RectorDashboard extends DashboardBase {
 
@@ -22,12 +41,12 @@ public class RectorDashboard extends DashboardBase {
 
     public RectorDashboard() {
         super("Rector — Dashboard", "Rector — Panel de Control", Estilos.ROJO, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("usuarios", "👥", "Usuarios"),
-                new ItemNav("crear_usuario", "➕", "Crear Usuario"),
-                new ItemNav("asignaciones", "🗓", "Gestión Académica"),
-                new ItemNav("historial", "🕑", "Historial"),
-                new ItemNav("reportes", "📈", "Reportes")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("usuarios", "usuarios", "Usuarios"),
+                new ItemNav("crear_usuario", "crear_usuario", "Crear Usuario"),
+                new ItemNav("asignaciones", "asignaciones", "Gestión Académica"),
+                new ItemNav("historial", "historial", "Historial"),
+                new ItemNav("reportes", "reportes", "Reportes")
         ));
     }
 
@@ -121,29 +140,46 @@ public class RectorDashboard extends DashboardBase {
         raiz.add(Estilos.crearTituloSeccion("Gestión de Usuarios"));
 
         List<Map<String, Object>> usuarios = usuarios();
+        JPanel resumen = new JPanel(new BorderLayout(12, 0));
+        resumen.setOpaque(false);
+        JLabel descripcion = new JLabel("Administra los accesos y roles registrados en SIDINO");
+        descripcion.setForeground(Estilos.TEXTO_SEC);
+        descripcion.setFont(Estilos.FUENTE_NORMAL);
+        JLabel contador = new JLabel(usuarios.size() + (usuarios.size() == 1 ? " usuario" : " usuarios"));
+        contador.setForeground(Estilos.ACCENT);
+        contador.setFont(Estilos.FUENTE_NEGRITA);
+        resumen.add(descripcion, BorderLayout.WEST);
+        resumen.add(contador, BorderLayout.EAST);
+        resumen.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+        raiz.add(resumen);
+
         LinkedHashMap<String, String> cols = new LinkedHashMap<>();
         cols.put("#", "id_usuario"); cols.put("Nombre", "nombre"); cols.put("Correo", "correo"); cols.put("Rol", "nombre_rol");
         JScrollPane scroll = Estilos.crearTabla(cols, usuarios);
         JTable tabla = (JTable) scroll.getViewport().getView();
+        tabla.setAutoCreateRowSorter(true);
+        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabla.setShowHorizontalLines(false);
+        tabla.setToolTipText("Selecciona una fila para editarla o eliminarla");
 
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         acciones.setOpaque(false);
-        BotonRedondeado btnEditar = new BotonRedondeado("Editar seleccionado", 10).colores(Estilos.AZUL, Estilos.AZUL.brighter());
-        BotonRedondeado btnEliminar = new BotonRedondeado("Eliminar seleccionado", 10).colores(Estilos.ROJO, Estilos.ROJO.darker());
+        BotonRedondeado btnEditar = new BotonRedondeado("Editar usuario", 10).colores(Estilos.AZUL, Estilos.AZUL.brighter());
+        BotonRedondeado btnEliminar = new BotonRedondeado("Eliminar usuario", 10).colores(Estilos.ROJO, Estilos.ROJO.darker());
         btnEditar.addActionListener(e -> {
-            int fila = tabla.getSelectedRow();
-            if (fila < 0) { Dialogos.advertencia(this, "Selecciona un usuario de la tabla."); return; }
-            editarUsuario(usuarios.get(fila));
+            int filaVista = tabla.getSelectedRow();
+            if (filaVista < 0) { Dialogos.advertencia(this, "Selecciona un usuario de la tabla."); return; }
+            editarUsuario(usuarios.get(tabla.convertRowIndexToModel(filaVista)));
         });
         btnEliminar.addActionListener(e -> {
-            int fila = tabla.getSelectedRow();
-            if (fila < 0) { Dialogos.advertencia(this, "Selecciona un usuario de la tabla."); return; }
-            eliminarUsuario(usuarios.get(fila));
+            int filaVista = tabla.getSelectedRow();
+            if (filaVista < 0) { Dialogos.advertencia(this, "Selecciona un usuario de la tabla."); return; }
+            eliminarUsuario(usuarios.get(tabla.convertRowIndexToModel(filaVista)));
         });
-        acciones.add(btnEditar);
         acciones.add(btnEliminar);
+        acciones.add(btnEditar);
 
-        raiz.add(scroll);
+        raiz.add(Estilos.crearTarjeta(null, scroll));
         raiz.add(acciones);
         return raiz;
     }
@@ -205,10 +241,14 @@ public class RectorDashboard extends DashboardBase {
         boolean confirmar = Dialogos.confirmar(this, "¿Seguro que quieres eliminar a " + nombre + "?\nEsta acción no se puede deshacer.",
                 "Sí, eliminar", Estilos.ROJO);
         if (!confirmar) return;
-        DB.ejecutar("DELETE FROM usuario WHERE id_usuario = ?", idUsuario);
-        registrarHistorial("Eliminó usuario: " + nombre + " (ID " + idUsuario + ")");
-        Dialogos.exito(this, "Usuario «" + nombre + "» eliminado correctamente.");
-        mostrarModulo("usuarios");
+        try {
+            DB.eliminarUsuario(idUsuario);
+            registrarHistorial("Eliminó usuario: " + nombre + " (ID " + idUsuario + ")");
+            Dialogos.exito(this, "Usuario «" + nombre + "» eliminado correctamente.");
+            mostrarModulo("usuarios");
+        } catch (RuntimeException ex) {
+            Dialogos.error(this, "No se pudo eliminar el usuario.\n" + ex.getMessage());
+        }
     }
 
     private JTextField campoEstilizado(String texto) {
@@ -310,12 +350,18 @@ public class RectorDashboard extends DashboardBase {
     private JPanel panelMatriculas() {
         JPanel raiz = columna();
 
-        List<Map<String, Object>> estudiantes = DB.query("SELECT id_usuario, nombre FROM usuario WHERE id_rol=5 ORDER BY nombre");
+        List<Map<String, Object>> estudiantes = DB.query("""
+            SELECT u.id_usuario, u.nombre
+            FROM usuario u
+            WHERE u.id_rol = 5
+              AND NOT EXISTS (SELECT 1 FROM matricula mat WHERE mat.id_estudiante = u.id_usuario)
+            ORDER BY u.nombre
+            """);
         List<Map<String, Object>> asigDisponibles = asignaciones();
 
         if (estudiantes.isEmpty() || asigDisponibles.isEmpty()) {
             StringBuilder faltan = new StringBuilder("Antes de matricular necesitas:\n");
-            if (estudiantes.isEmpty()) faltan.append("• Al menos un usuario con rol Estudiante (créalo en «Crear Usuario»).\n");
+            if (estudiantes.isEmpty()) faltan.append("• Un estudiante sin matrícula previa (créalo o retira su matrícula actual).\n");
             if (asigDisponibles.isEmpty()) faltan.append("• Al menos una asignación académica creada (pestaña «Asignaciones»).\n");
             raiz.add(Estilos.crearAlertaInfo(faltan.toString()));
             return raiz;
@@ -345,14 +391,13 @@ public class RectorDashboard extends DashboardBase {
             int idEstudiante = ((Number) estudiantes.get(comboEstudiante.getSelectedIndex()).get("id_usuario")).intValue();
             int idAsignacion = ((Number) asigDisponibles.get(comboAsignacion.getSelectedIndex()).get("id_asignacion")).intValue();
 
-            long yaExiste = DB.contar("SELECT COUNT(*) FROM matricula WHERE id_estudiante=? AND id_asignacion=?", idEstudiante, idAsignacion);
-            if (yaExiste > 0) {
-                Dialogos.advertencia(this, "Ese estudiante ya está matriculado en esa clase.");
+            long yaMatriculado = DB.contar("SELECT COUNT(*) FROM matricula WHERE id_estudiante = ?", idEstudiante);
+            if (yaMatriculado > 0) {
+                Dialogos.advertencia(this, "Ese estudiante ya está asignado a otra clase y no puede tener una segunda matrícula.");
                 return;
             }
             try {
-                long nuevoId = DB.ejecutarYObtenerId(
-                        "INSERT INTO matricula (id_estudiante, id_asignacion) VALUES (?, ?)", idEstudiante, idAsignacion);
+                long nuevoId = DB.crearMatricula(idEstudiante, idAsignacion);
                 registrarHistorial("Matriculó estudiante (matrícula ID " + nuevoId + ")");
                 Dialogos.exito(this, "Estudiante matriculado correctamente.");
                 refrescarModuloActual();
@@ -578,7 +623,17 @@ public class RectorDashboard extends DashboardBase {
     private JPanel panelAsignacionAcademica() {
         JPanel raiz = columna();
 
-        List<Map<String, Object>> docentes = DB.query("SELECT id_usuario, nombre FROM usuario WHERE id_rol=4 ORDER BY nombre");
+        raiz.add(Estilos.crearAlertaInfo(
+            "Un docente solo puede tener una clase asignada y un estudiante solo puede pertenecer a una clase. Los selectores muestran únicamente personas disponibles."));
+        raiz.add(Box.createVerticalStrut(12));
+
+        List<Map<String, Object>> docentes = DB.query("""
+            SELECT u.id_usuario, u.nombre
+            FROM usuario u
+            WHERE u.id_rol = 4
+              AND NOT EXISTS (SELECT 1 FROM asignacion_academica aa WHERE aa.id_docente = u.id_usuario)
+            ORDER BY u.nombre
+            """);
         List<Map<String, Object>> materias = DB.query("SELECT id_materia, nombre FROM materia ORDER BY nombre");
         List<Map<String, Object>> cursos = DB.query("SELECT id_curso, nombre FROM curso ORDER BY nombre");
         List<Map<String, Object>> salones = DB.query("SELECT id_salon, nombre FROM salon ORDER BY nombre");
@@ -586,8 +641,8 @@ public class RectorDashboard extends DashboardBase {
         List<Map<String, Object>> periodos = DB.query("SELECT id_periodo, nombre FROM periodo_academico ORDER BY id_periodo DESC");
 
         if (docentes.isEmpty() || materias.isEmpty() || cursos.isEmpty() || salones.isEmpty() || horarios.isEmpty() || periodos.isEmpty()) {
-            raiz.add(Estilos.crearAlertaInfo(
-                    "Antes de crear una asignación necesitas al menos un docente, una materia, un curso, un salón, un horario y un periodo académico. Créalos en las otras pestañas primero."));
+                raiz.add(Estilos.crearAlertaInfo(
+                    "Antes de crear una asignación necesitas un docente disponible, una materia, un curso, un salón, un horario y un periodo académico."));
             return raiz;
         }
 
@@ -610,6 +665,7 @@ public class RectorDashboard extends DashboardBase {
         gc.insets = new Insets(6, 6, 6, 6);
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1;
 
         gc.gridx = 0; gc.gridy = 0; form.add(etiqueta("Docente:"), gc);
         gc.gridx = 1; form.add(comboDocente, gc);
@@ -633,9 +689,12 @@ public class RectorDashboard extends DashboardBase {
             int idHorario = ((Number) horarios.get(comboHorario.getSelectedIndex()).get("id_horario")).intValue();
             int idPeriodo = ((Number) periodos.get(comboPeriodo.getSelectedIndex()).get("id_periodo")).intValue();
             try {
-                long nuevoId = DB.ejecutarYObtenerId(
-                        "INSERT INTO asignacion_academica (id_docente, id_materia, id_curso, id_salon, id_horario, id_periodo) VALUES (?,?,?,?,?,?)",
-                        idDocente, idMateria, idCurso, idSalon, idHorario, idPeriodo);
+                if (DB.contar("SELECT COUNT(*) FROM asignacion_academica WHERE id_docente = ?", idDocente) > 0) {
+                    Dialogos.advertencia(this, "Ese profesor ya tiene una clase asignada.");
+                    return;
+                }
+                long nuevoId = DB.crearAsignacionAcademica(
+                    idDocente, idMateria, idCurso, idSalon, idHorario, idPeriodo);
                 registrarHistorial("Creó asignación académica (ID " + nuevoId + ")");
                 Dialogos.exito(this, "Asignación creada correctamente. Ya puedes matricular estudiantes en esa clase.");
                 refrescarModuloActual();
@@ -645,7 +704,7 @@ public class RectorDashboard extends DashboardBase {
         });
         gc.gridx = 1; gc.gridy = 6; form.add(guardar, gc);
 
-        raiz.add(Estilos.crearTarjeta("Nueva asignación (profesor → clase)", form));
+        raiz.add(Estilos.crearTarjeta("Nueva asignación académica", form));
         raiz.add(Box.createVerticalStrut(12));
 
         List<Map<String, Object>> existentes = asignaciones();
@@ -698,23 +757,7 @@ public class RectorDashboard extends DashboardBase {
         return raiz;
     }
 
-<<<<<<< HEAD
     private JPanel panelReportes() {
-        long totalUsuarios = DB.contar("SELECT COUNT(*) FROM usuario");
-        long totalDocentes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=4");
-        long totalEstudiantes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=5");
-        JPanel raiz = columna();
-        raiz.add(Estilos.crearTituloSeccion("Reportes Generales"));
-        raiz.add(Estilos.crearGridStats(
-                Estilos.crearStatCard(String.valueOf(totalUsuarios), "Usuarios totales", Estilos.ROJO),
-                Estilos.crearStatCard(String.valueOf(totalDocentes), "Docentes", Estilos.AZUL),
-                Estilos.crearStatCard(String.valueOf(totalEstudiantes), "Estudiantes", Estilos.VERDE)
-        ));
-        return raiz;
-    }
-
-=======
-private JPanel panelReportes() {
     long totalUsuarios = DB.contar("SELECT COUNT(*) FROM usuario");
     long totalDocentes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=4");
     long totalEstudiantes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=5");
@@ -744,8 +787,9 @@ private JPanel panelReportes() {
     raiz.add(acciones);
 
     return raiz;
-}
-private void abrirAplicacionReportes() {
+    }
+
+    private void abrirAplicacionReportes() {
     try {
         Desktop.getDesktop().browse(
                 new URI("http://localhost:8080/")
@@ -756,15 +800,10 @@ private void abrirAplicacionReportes() {
                 "No se pudo abrir la aplicación de reportes:\n" + ex.getMessage()
         );
     }
-}
->>>>>>> rafael
+    }
     private JLabel etiqueta(String texto) {
         JLabel l = new JLabel(texto);
         l.setForeground(Estilos.TEXTO_SEC);
         return l;
     }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> rafael

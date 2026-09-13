@@ -14,11 +14,11 @@ public class AcudienteDashboard extends DashboardBase {
 
     public AcudienteDashboard() {
         super("Acudiente — Dashboard", "Acudiente — Seguimiento", Estilos.MORADO, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("notas", "⭐", "Notas del hijo/a"),
-                new ItemNav("observador", "📖", "Observador"),
-                new ItemNav("citaciones", "📌", "Citaciones"),
-                new ItemNav("boletines", "🧾", "Boletines")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("notas", "notas", "Notas del hijo/a"),
+                new ItemNav("observador", "observador", "Observador"),
+                new ItemNav("citaciones", "citaciones", "Citaciones"),
+                new ItemNav("boletines", "boletines", "Boletines")
         ));
     }
 

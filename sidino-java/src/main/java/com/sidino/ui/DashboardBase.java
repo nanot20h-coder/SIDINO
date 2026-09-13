@@ -3,6 +3,7 @@ package com.sidino.ui;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.BotonRedondeado;
 import com.sidino.ui.componentes.Estilos;
+import com.sidino.ui.componentes.Iconos;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -92,14 +93,15 @@ public abstract class DashboardBase extends JPanel {
         private boolean activo;
         private boolean hover;
 
-        BotonNav(String texto) {
-            super(texto);
+        BotonNav(String claveIcono, String texto) {
+            super(texto, Iconos.navegacion(claveIcono));
             setOpaque(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
             setHorizontalAlignment(SwingConstants.LEFT);
-            setFont(Estilos.FUENTE_NORMAL);
+            setIconTextGap(12);
+            setFont(Estilos.FUENTE_NEGRITA);
             setForeground(Estilos.TEXTO_SEC);
             setBorder(new EmptyBorder(9, 14, 9, 10));
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -144,13 +146,13 @@ public abstract class DashboardBase extends JPanel {
         };
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         sidebar.setOpaque(false);
-        sidebar.setPreferredSize(new Dimension(232, 0));
+        sidebar.setPreferredSize(new Dimension(248, 0));
         sidebar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(0, 0, 0, 80)),
-                new EmptyBorder(18, 14, 18, 14)));
+            BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(255, 255, 255, 18)),
+            new EmptyBorder(22, 18, 18, 18)));
 
-        JLabel marca = new JLabel("\uD83D\uDC19 SIDINO 2026");
-        marca.setFont(new Font("Arial", Font.BOLD, 18));
+        JLabel marca = new JLabel("SIDINO 2026");
+        marca.setFont(new Font("Segoe UI", Font.BOLD, 20));
         marca.setForeground(Estilos.TEXTO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
         sidebar.add(marca);
@@ -202,7 +204,7 @@ public abstract class DashboardBase extends JPanel {
         sidebar.add(Box.createVerticalStrut(14));
 
         for (ItemNav item : nav) {
-            BotonNav boton = new BotonNav(item.icono() + "   " + item.etiqueta());
+            BotonNav boton = new BotonNav(item.icono(), item.etiqueta());
             boton.setAlignmentX(Component.LEFT_ALIGNMENT);
             boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
             boton.addActionListener(e -> mostrarModulo(item.id()));
@@ -212,7 +214,7 @@ public abstract class DashboardBase extends JPanel {
         }
 
         sidebar.add(Box.createVerticalGlue());
-        JButton salir = new BotonRedondeado("\u23FB  Cerrar sesión", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
+        JButton salir = new BotonRedondeado("[X]  Cerrar sesión", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
         salir.setAlignmentX(Component.LEFT_ALIGNMENT);
         salir.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         salir.addActionListener(e -> cerrarSesion());
@@ -234,16 +236,17 @@ public abstract class DashboardBase extends JPanel {
         topbar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, Estilos.BORDE),
                 new EmptyBorder(14, 22, 14, 22)));
+        topbar.setPreferredSize(new Dimension(100, 64));
         JLabel lbl = new JLabel(titulo);
-        lbl.setFont(new Font("Arial", Font.BOLD, 17));
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lbl.setForeground(Estilos.TEXTO);
         topbar.add(lbl, BorderLayout.WEST);
 
         JPanel derecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
         derecha.setOpaque(false);
 
-        JLabel engranaje = new JLabel("\u2699");
-        engranaje.setFont(new Font("Arial", Font.PLAIN, 20));
+        JLabel engranaje = new JLabel("Ajustes");
+        engranaje.setFont(Estilos.FUENTE_NORMAL);
         engranaje.setForeground(Estilos.TEXTO_SEC);
         engranaje.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         engranaje.setToolTipText("Personalizar apariencia");
@@ -254,6 +257,7 @@ public abstract class DashboardBase extends JPanel {
         });
 
         JLabel usuario = new JLabel(Sesion.nombre == null ? "Usuario" : Sesion.nombre);
+        usuario.setBorder(new EmptyBorder(7, 12, 7, 12));
         usuario.setForeground(Estilos.TEXTO_SEC);
 
         derecha.add(engranaje);

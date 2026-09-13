@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.sql.Date;
 
 /**
  * Capa de acceso a datos genérica.
@@ -61,6 +63,142 @@ public class DB {
              PreparedStatement ps = con.prepareStatement(sql)) {
             bind(ps, params);
             return ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
+        }
+    }
+
+    /** Ejecuta varias operaciones en una única transacción. */
+    public static void transaccion(Consumer<Connection> operaciones) {
+        try (Connection con = Conexion.obtener()) {
+            boolean autoCommitOriginal = con.getAutoCommit();
+            con.setAutoCommit(false);
+            try {
+                operaciones.accept(con);
+                con.commit();
+            } catch (RuntimeException | SQLException e) {
+                con.rollback();
+                if (e instanceof RuntimeException runtimeException) throw runtimeException;
+                throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
+            } finally {
+                con.setAutoCommit(autoCommitOriginal);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
+        }
+    }
+
+    /** Elimina un usuario y todos sus registros dependientes respetando las FK. */
+    public static void eliminarUsuario(int idUsuario) {
+        transaccion(con -> {
+            ejecutar(con, "DELETE FROM usuario_atributo WHERE id_usuario = ?", idUsuario);
+            ejecutar(con, "DELETE FROM historial_chatbot WHERE id_usuario = ?", idUsuario);
+            ejecutar(con, "DELETE FROM acudiente_estudiante WHERE id_acudiente = ? OR id_estudiante = ?", idUsuario, idUsuario);
+            ejecutar(con, "DELETE FROM historial_accion WHERE id_usuario = ?", idUsuario);
+
+            ejecutar(con, "DELETE bd FROM boletin_detalle bd JOIN boletin b ON b.id_boletin = bd.id_boletin WHERE b.id_estudiante = ?", idUsuario);
+            ejecutar(con, "DELETE FROM boletin WHERE id_estudiante = ?", idUsuario);
+            ejecutar(con, "DELETE n FROM nota n JOIN matricula m ON m.id_matricula = n.id_matricula WHERE m.id_estudiante = ?", idUsuario);
+            ejecutar(con, "DELETE FROM matricula WHERE id_estudiante = ?", idUsuario);
+            ejecutar(con, "DELETE FROM citacion WHERE id_estudiante = ?", idUsuario);
+            ejecutar(con, "DELETE FROM observador WHERE id_estudiante = ?", idUsuario);
+
+            ejecutar(con, "DELETE bd FROM boletin_detalle bd JOIN nota n ON n.id_nota = bd.id_nota JOIN matricula m ON m.id_matricula = n.id_matricula JOIN asignacion_academica a ON a.id_asignacion = m.id_asignacion WHERE a.id_docente = ?", idUsuario);
+            ejecutar(con, "DELETE n FROM nota n JOIN matricula m ON m.id_matricula = n.id_matricula JOIN asignacion_academica a ON a.id_asignacion = m.id_asignacion WHERE a.id_docente = ?", idUsuario);
+            ejecutar(con, "DELETE FROM matricula WHERE id_asignacion IN (SELECT id_asignacion FROM asignacion_academica WHERE id_docente = ?)", idUsuario);
+            ejecutar(con, "DELETE FROM citacion WHERE id_asignacion IN (SELECT id_asignacion FROM asignacion_academica WHERE id_docente = ?)", idUsuario);
+            ejecutar(con, "DELETE FROM observador WHERE id_asignacion IN (SELECT id_asignacion FROM asignacion_academica WHERE id_docente = ?)", idUsuario);
+            ejecutar(con, "DELETE FROM contenido WHERE id_asignacion IN (SELECT id_asignacion FROM asignacion_academica WHERE id_docente = ?)", idUsuario);
+            ejecutar(con, "DELETE FROM asignacion_academica WHERE id_docente = ?", idUsuario);
+
+            ejecutar(con, "DELETE FROM usuario WHERE id_usuario = ?", idUsuario);
+        });
+    }
+
+    /** Genera un boletín único para un estudiante y periodo, incluyendo sus notas. */
+    public static boolean generarBoletin(int idEstudiante, int idPeriodo) {
+        final boolean[] creado = {false};
+        transaccion(con -> {
+            try {
+                if (contar("SELECT COUNT(*) FROM boletin WHERE id_estudiante = ? AND id_periodo = ?", idEstudiante, idPeriodo) > 0) {
+                    return;
+                }
+                long idBoletin = insertar(con,
+                        "INSERT INTO boletin (id_estudiante, id_periodo, fecha) VALUES (?, ?, ?)",
+                        idEstudiante, idPeriodo, new Date(System.currentTimeMillis()));
+                ejecutar(con, """
+                        INSERT INTO boletin_detalle (id_boletin, id_nota)
+                        SELECT ?, n.id_nota
+                        FROM nota n
+                        JOIN matricula mat ON n.id_matricula = mat.id_matricula
+                        JOIN asignacion_academica aa ON mat.id_asignacion = aa.id_asignacion
+                        WHERE mat.id_estudiante = ? AND aa.id_periodo = ?
+                        """, idBoletin, idEstudiante, idPeriodo);
+                creado[0] = true;
+            } catch (RuntimeException ex) {
+                throw ex;
+            }
+        });
+        return creado[0];
+    }
+
+    /** Crea una asignación solo si el docente todavía no tiene otra clase. */
+    public static long crearAsignacionAcademica(int idDocente, int idMateria, int idCurso,
+                                                int idSalon, int idHorario, int idPeriodo) {
+        final long[] id = {0};
+        transaccion(con -> {
+            if (contar(con, "SELECT COUNT(*) FROM asignacion_academica WHERE id_docente = ?", idDocente) > 0) {
+                throw new IllegalStateException("El docente ya tiene una clase asignada.");
+            }
+            id[0] = insertar(con,
+                    "INSERT INTO asignacion_academica (id_docente, id_materia, id_curso, id_salon, id_horario, id_periodo) VALUES (?,?,?,?,?,?)",
+                    idDocente, idMateria, idCurso, idSalon, idHorario, idPeriodo);
+        });
+        return id[0];
+    }
+
+    /** Matricula un estudiante solo si todavía no tiene otra clase. */
+    public static long crearMatricula(int idEstudiante, int idAsignacion) {
+        final long[] id = {0};
+        transaccion(con -> {
+            if (contar(con, "SELECT COUNT(*) FROM matricula WHERE id_estudiante = ?", idEstudiante) > 0) {
+                throw new IllegalStateException("El estudiante ya tiene una clase asignada.");
+            }
+            id[0] = insertar(con,
+                    "INSERT INTO matricula (id_estudiante, id_asignacion) VALUES (?, ?)",
+                    idEstudiante, idAsignacion);
+        });
+        return id[0];
+    }
+
+    private static void ejecutar(Connection con, String sql, Object... params) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            bind(ps, params);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
+        }
+    }
+
+    private static long insertar(Connection con, String sql, Object... params) {
+        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            bind(ps, params);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) return keys.getLong(1);
+            }
+            throw new RuntimeException("La base de datos no devolvió el ID generado.");
+        } catch (SQLException e) {
+            throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
+        }
+    }
+
+    private static long contar(Connection con, String sql, Object... params) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            bind(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : 0L;
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error de base de datos: " + e.getMessage(), e);
         }

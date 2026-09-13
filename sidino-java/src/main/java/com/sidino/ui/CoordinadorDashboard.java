@@ -13,11 +13,11 @@ public class CoordinadorDashboard extends DashboardBase {
 
     public CoordinadorDashboard() {
         super("Coordinador — Dashboard", "Coordinación — Panel de Supervisión", Estilos.NARANJA, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("observador", "📖", "Observador"),
-                new ItemNav("citaciones", "📌", "Citaciones"),
-                new ItemNav("docentes", "🧑‍🏫", "Docentes"),
-                new ItemNav("reportes", "📈", "Reportes")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("observador", "observador", "Observador"),
+                new ItemNav("citaciones", "citaciones", "Citaciones"),
+                new ItemNav("docentes", "docentes", "Docentes"),
+                new ItemNav("reportes", "reportes", "Reportes")
         ));
     }
 

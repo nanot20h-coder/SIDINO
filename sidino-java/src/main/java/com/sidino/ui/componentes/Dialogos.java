@@ -15,10 +15,10 @@ public class Dialogos {
     private Dialogos() {}
 
     public enum Tipo {
-        INFO("\u2139", Estilos.AZUL),
-        EXITO("\u2713", Estilos.VERDE),
-        ERROR("\u2715", Estilos.ROJO),
-        ADVERTENCIA("\u26A0", Estilos.AMBAR);
+        INFO("i", Estilos.AZUL),
+        EXITO("OK", Estilos.VERDE),
+        ERROR("X", Estilos.ROJO),
+        ADVERTENCIA("!", Estilos.AMBAR);
 
         final String icono;
         final Color color;

@@ -10,8 +10,10 @@ public class BotonRedondeado extends JButton {
     private final int radio;
     private boolean hover;
     private boolean presionado;
+    private float progresoHover;
     private Color colorBase;
     private Color colorHover;
+    private Timer animador;
 
     public BotonRedondeado(String texto, int radio) {
         this.radio = radio;
@@ -23,12 +25,22 @@ public class BotonRedondeado extends JButton {
         setBorderPainted(false);
         setContentAreaFilled(false);
         setForeground(Color.WHITE);
-        setFont(new Font("Arial", Font.BOLD, 14));
+        setFont(new Font("Segoe UI", Font.BOLD, 13));
+        setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        animador = new Timer(15, e -> {
+            float objetivo = hover ? 1f : 0f;
+            progresoHover += (objetivo - progresoHover) * 0.28f;
+            if (Math.abs(objetivo - progresoHover) < 0.01f) {
+                progresoHover = objetivo;
+                animador.stop();
+            }
+            repaint();
+        });
 
         addMouseListener(new MouseAdapter() {
-            @Override public void mouseEntered(MouseEvent e) { hover = true; repaint(); }
-            @Override public void mouseExited(MouseEvent e) { hover = false; presionado = false; repaint(); }
+            @Override public void mouseEntered(MouseEvent e) { hover = true; animador.start(); }
+            @Override public void mouseExited(MouseEvent e) { hover = false; presionado = false; animador.start(); }
             @Override public void mousePressed(MouseEvent e) { presionado = true; repaint(); }
             @Override public void mouseReleased(MouseEvent e) { presionado = false; repaint(); }
         });
@@ -45,8 +57,9 @@ public class BotonRedondeado extends JButton {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        Color tope = presionado ? Estilos.oscurecer(colorBase, 0.12) : (hover ? colorHover : colorBase);
-        Color base = presionado ? Estilos.oscurecer(colorBase, 0.22) : (hover ? colorBase : Estilos.oscurecer(colorBase, 0.12));
+        Color hoverActual = mezclar(colorBase, colorHover, progresoHover);
+        Color tope = presionado ? Estilos.oscurecer(colorBase, 0.12) : hoverActual;
+        Color base = presionado ? Estilos.oscurecer(colorBase, 0.22) : Estilos.oscurecer(hoverActual, 0.12);
 
         // Sombra suave debajo del botón para que no se vea plano.
         if (!presionado) {
@@ -65,5 +78,12 @@ public class BotonRedondeado extends JButton {
     @Override
     protected void paintBorder(Graphics g) {
         // sin borde
+    }
+
+    private Color mezclar(Color inicio, Color fin, float progreso) {
+        int rojo = (int) (inicio.getRed() + (fin.getRed() - inicio.getRed()) * progreso);
+        int verde = (int) (inicio.getGreen() + (fin.getGreen() - inicio.getGreen()) * progreso);
+        int azul = (int) (inicio.getBlue() + (fin.getBlue() - inicio.getBlue()) * progreso);
+        return new Color(rojo, verde, azul);
     }
 }

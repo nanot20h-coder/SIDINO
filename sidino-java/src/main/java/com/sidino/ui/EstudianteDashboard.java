@@ -15,12 +15,12 @@ public class EstudianteDashboard extends DashboardBase {
 
     public EstudianteDashboard() {
         super("Estudiante — Dashboard", "Estudiante — Mi Panel", Estilos.VERDE, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("notas", "⭐", "Mis notas"),
-                new ItemNav("horario", "📅", "Horario"),
-                new ItemNav("boletines", "🧾", "Boletines"),
-                new ItemNav("contenido", "📁", "Materiales"),
-                new ItemNav("observador", "📖", "Observador")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("notas", "notas", "Mis notas"),
+                new ItemNav("horario", "horario", "Horario"),
+                new ItemNav("boletines", "boletines", "Boletines"),
+                new ItemNav("contenido", "contenido", "Materiales"),
+                new ItemNav("observador", "observador", "Observador")
         ));
     }
 

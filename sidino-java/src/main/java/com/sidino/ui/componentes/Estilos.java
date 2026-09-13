@@ -100,10 +100,10 @@ public class Estilos {
             new Color(0, 200, 190),   // turquesa (por defecto)
     };
 
-    public static final Font FUENTE_TITULO   = new Font("Arial", Font.BOLD, 20);
-    public static final Font FUENTE_SUBTITULO = new Font("Arial", Font.PLAIN, 13);
-    public static final Font FUENTE_NORMAL   = new Font("Arial", Font.PLAIN, 13);
-    public static final Font FUENTE_NEGRITA  = new Font("Arial", Font.BOLD, 13);
+    public static final Font FUENTE_TITULO   = new Font("Segoe UI", Font.BOLD, 21);
+    public static final Font FUENTE_SUBTITULO = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font FUENTE_NORMAL   = new Font("Segoe UI", Font.PLAIN, 13);
+    public static final Font FUENTE_NEGRITA  = new Font("Segoe UI", Font.BOLD, 13);
 
     static { aplicarPreferencias(); }
 
@@ -111,13 +111,13 @@ public class Estilos {
     public static void aplicarPreferencias() {
         ACCENT = Preferencias.getColorAcento();
         if (Preferencias.esTemaOscuro()) {
-            FONDO         = new Color(10, 16, 30);
-            FONDO_TARJETA = new Color(22, 32, 55);
-            BORDE         = new Color(45, 60, 90);
+            FONDO         = new Color(9, 14, 26);
+            FONDO_TARJETA = new Color(20, 29, 47);
+            BORDE         = new Color(48, 63, 88);
             TEXTO         = new Color(226, 232, 240);
             TEXTO_SEC     = new Color(148, 163, 184);
         } else {
-            FONDO         = new Color(241, 245, 249);
+            FONDO         = new Color(244, 247, 250);
             FONDO_TARJETA = new Color(255, 255, 255);
             BORDE         = new Color(220, 226, 235);
             TEXTO         = new Color(15, 23, 42);
@@ -175,18 +175,19 @@ public class Estilos {
 
     // ── Tarjeta de estadística (stat-card), con franja de color y sombra suave ──
     public static JPanel crearStatCard(String valor, String etiqueta, Color color) {
-        PanelRedondeado card = new PanelRedondeado(14, true);
+        PanelRedondeado card = new PanelRedondeado(12, true);
         card.setLayout(new BorderLayout(12, 4));
         card.setBackground(FONDO_TARJETA);
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 4, 0, 0, color),
                 new EmptyBorder(16, 16, 16, 14)));
+        card.setPreferredSize(new Dimension(180, 88));
 
         JPanel textos = new JPanel();
         textos.setOpaque(false);
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
         JLabel lblValor = new JLabel(valor);
-        lblValor.setFont(new Font("Arial", Font.BOLD, 26));
+        lblValor.setFont(new Font("Segoe UI", Font.BOLD, 27));
         lblValor.setForeground(TEXTO);
         JLabel lblEtiqueta = new JLabel(etiqueta);
         lblEtiqueta.setFont(FUENTE_SUBTITULO);
@@ -264,8 +265,8 @@ public class Estilos {
         p.setBackground(FONDO_TARJETA);
         p.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDE, 1, true), new EmptyBorder(34, 20, 34, 20)));
-        JLabel icono = new JLabel("\uD83D\uDCED", SwingConstants.CENTER);
-        icono.setFont(new Font("Arial", Font.PLAIN, 26));
+        JLabel icono = new JLabel("[ ]", SwingConstants.CENTER);
+        icono.setFont(new Font("Segoe UI", Font.BOLD, 18));
         JLabel lbl = new JLabel(mensaje, SwingConstants.CENTER);
         lbl.setForeground(TEXTO_SEC);
         lbl.setFont(FUENTE_NORMAL);
@@ -287,9 +288,9 @@ public class Estilos {
         p.setBackground(new Color(AZUL.getRed(), AZUL.getGreen(), AZUL.getBlue(), 30));
         p.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 3, 0, 0, AZUL), new EmptyBorder(12, 14, 12, 16)));
-        JLabel icono = new JLabel("\u2139");
+        JLabel icono = new JLabel("i");
         icono.setForeground(AZUL);
-        icono.setFont(new Font("Arial", Font.BOLD, 16));
+        icono.setFont(new Font("Segoe UI", Font.BOLD, 16));
         icono.setVerticalAlignment(SwingConstants.TOP);
         String html = "<html>" + mensaje.replace("\n", "<br>") + "</html>";
         JLabel lbl = new JLabel(html);

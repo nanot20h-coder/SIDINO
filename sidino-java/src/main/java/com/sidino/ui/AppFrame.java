@@ -1,5 +1,9 @@
 package com.sidino.ui;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.sidino.core.Preferencias;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -20,7 +24,7 @@ public class AppFrame extends JFrame {
     private Integer idRolActual;
 
     private AppFrame() {
-        super("SIDINO \uD83D\uDC19");
+        super("SIDINO");
         setUndecorated(true);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -62,6 +66,15 @@ public class AppFrame extends JFrame {
      * volver a crearlos para que tomen la nueva paleta de Estilos.
      */
     public void refrescar() {
+        try {
+            if (Preferencias.esTemaOscuro()) {
+                FlatDarkLaf.setup();
+            } else {
+                FlatLightLaf.setup();
+            }
+        } catch (Exception ex) {
+            System.err.println("No se pudo actualizar FlatLaf: " + ex.getMessage());
+        }
         SwingUtilities.updateComponentTreeUI(this);
         if (idRolActual == null) {
             mostrarLogin();

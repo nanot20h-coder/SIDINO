@@ -17,11 +17,11 @@ public class DocenteDashboard extends DashboardBase {
 
     public DocenteDashboard() {
         super("Docente — Dashboard", "Docente — Mi Panel", Estilos.AZUL, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("horario", "📅", "Mis clases"),
-                new ItemNav("notas", "⭐", "Registrar notas"),
-                new ItemNav("observador", "📖", "Observador"),
-                new ItemNav("contenido", "📁", "Contenido")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("horario", "horario", "Mis clases"),
+                new ItemNav("notas", "notas", "Registrar notas"),
+                new ItemNav("observador", "observador", "Observador"),
+                new ItemNav("contenido", "contenido", "Contenido")
         ));
     }
 
