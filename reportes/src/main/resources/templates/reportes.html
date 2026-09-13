@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Reportes SIDINO</title>
+
+    <link rel="stylesheet" th:href="@{/css/estilosos.css}">
+
+</head>
+
+
+<body>
+
+<div class="contenedor">
+
+    <div class="tarjeta">
+
+        <h1>Generador de Reportes</h1>
+
+        <p class="descripcion">
+            Selecciona una tabla y agrega los filtros que necesites.
+        </p>
+
+
+        <!-- ================================================= -->
+        <!-- FORMULARIO DE BÚSQUEDA -->
+        <!-- ================================================= -->
+
+        <form th:action="@{/reportes/buscar}"
+              method="get">
+
+
+            <!-- TABLA -->
+
+            <div class="campo">
+
+                <label for="tabla">
+                    Tabla de la base de datos
+                </label>
+
+
+                <select id="tabla"
+                        name="tabla"
+                        required
+                        onchange="cargarColumnas(this.value)">
+
+                    <option value="">
+                        Seleccione una tabla
+                    </option>
+
+
+                    <option th:each="tabla : ${tablas}"
+                            th:value="${tabla}"
+                            th:text="${tabla}"
+                            th:selected="${tabla == tablaSeleccionada}">
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- FILTROS -->
+            <!-- ================================================= -->
+
+            <div th:if="${columnas != null}"
+                 class="campo">
+
+                <label>
+                    Filtros
+                </label>
+
+
+                <div id="filtros">
+
+
+                    <!-- PRIMER FILTRO -->
+
+                    <div class="filtro">
+
+                        <select name="columnas">
+
+                            <option value="">
+                                Seleccione una columna
+                            </option>
+
+
+                            <option th:each="columna : ${columnas}"
+                                    th:value="${columna}"
+                                    th:text="${columna}">
+                            </option>
+
+                        </select>
+
+
+                        <input type="text"
+                               name="valores"
+                               placeholder="Valor a buscar">
+
+                    </div>
+
+                </div>
+
+
+                <!-- AGREGAR OTRO FILTRO -->
+
+                <button type="button"
+                        onclick="agregarFiltro()">
+
+                    + Agregar otro filtro
+
+                </button>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- BOTÓN BUSCAR -->
+            <!-- ================================================= -->
+
+            <button type="submit">
+
+                Buscar registros
+
+            </button>
+
+        </form>
+
+
+        <!-- ================================================= -->
+        <!-- RESULTADOS -->
+        <!-- ================================================= -->
+
+        <div th:if="${reporte != null}"
+             class="resultados">
+
+
+            <h2>
+                Resultados encontrados
+            </h2>
+
+
+            <p>
+
+                Registros encontrados:
+
+                <strong th:text="${#lists.size(reporte.datos)}">
+                </strong>
+
+            </p>
+
+
+            <!-- ================================================= -->
+            <!-- TABLA DE RESULTADOS -->
+            <!-- ================================================= -->
+
+            <div class="tabla-resultados">
+
+                <table>
+
+
+                    <!-- ENCABEZADOS -->
+
+                    <thead>
+
+                    <tr>
+
+                        <th th:each="columna : ${reporte.columnas}"
+                            th:text="${columna}">
+                        </th>
+
+                    </tr>
+
+                    </thead>
+
+
+                    <!-- DATOS -->
+
+                    <tbody>
+
+                    <tr th:each="fila : ${reporte.datos}">
+
+                        <td th:each="dato : ${fila}"
+                            th:text="${dato}">
+                        </td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- ================================================= -->
+            <!-- DESCARGA DEL REPORTE -->
+            <!-- ================================================= -->
+
+            <div class="descarga">
+
+
+                <h2>
+                    Descargar reporte
+                </h2>
+
+
+                <form th:action="@{/reportes/generar}"
+                      method="get">
+
+
+                    <!-- TABLA SELECCIONADA -->
+
+                    <input type="hidden"
+                           name="tabla"
+                           th:value="${tablaSeleccionada}">
+
+
+                    <!-- ================================================= -->
+                    <!-- CONSERVAR LOS FILTROS UTILIZADOS -->
+                    <!-- ================================================= -->
+
+                    <div th:if="${columnasFiltro != null}"
+                         th:each="columna, estado : ${columnasFiltro}">
+
+
+                        <input type="hidden"
+                               name="columnas"
+                               th:value="${columna}">
+
+
+                        <input type="hidden"
+                               name="valores"
+                               th:value="${valoresFiltro[estado.index]}">
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- FORMATO -->
+                    <!-- ================================================= -->
+
+                    <div class="campo">
+
+                        <label for="formato">
+
+                            Formato del reporte
+
+                        </label>
+
+
+                        <select id="formato"
+                                name="formato"
+                                required>
+
+                            <option value="">
+                                Seleccione un formato
+                            </option>
+
+
+                            <option value="excel">
+                                Excel
+                            </option>
+
+
+                            <option value="word">
+                                Word
+                            </option>
+
+
+                            <option value="pdf">
+                                PDF
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- ================================================= -->
+                    <!-- BOTÓN DESCARGAR -->
+                    <!-- ================================================= -->
+
+                    <button type="submit">
+
+                        Descargar reporte
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================================================= -->
+<!-- COLUMNAS DISPONIBLES PARA JAVASCRIPT -->
+<!-- ================================================= -->
+
+<script th:inline="javascript">
+
+    const columnasDisponibles =
+        /*[[${columnas}]]*/ [];
+
+</script>
+
+
+<!-- ================================================= -->
+<!-- JAVASCRIPT -->
+<!-- ================================================= -->
+
+<script>
+
+
+    // =================================================
+    // CARGAR COLUMNAS DE LA TABLA
+    // =================================================
+
+    function cargarColumnas(tabla) {
+
+        if (tabla === "") {
+            return;
+        }
+
+
+        window.location.href =
+            "/reportes/columnas?tabla=" +
+            encodeURIComponent(tabla);
+
+    }
+
+
+    // =================================================
+    // AGREGAR NUEVO FILTRO
+    // =================================================
+
+    function agregarFiltro() {
+
+
+        const contenedor =
+            document.getElementById("filtros");
+
+
+        const nuevoFiltro =
+            document.createElement("div");
+
+
+        nuevoFiltro.className =
+            "filtro";
+
+
+        // Crear opciones del selector
+
+        let opciones = `
+
+            <option value="">
+                Seleccione una columna
+            </option>
+
+        `;
+
+
+        columnasDisponibles.forEach(
+            function(columna) {
+
+                opciones += `
+
+                    <option value="${columna}">
+                        ${columna}
+                    </option>
+
+                `;
+
+            }
+        );
+
+
+        // Crear HTML del nuevo filtro
+
+        nuevoFiltro.innerHTML = `
+
+            <select name="columnas">
+
+                ${opciones}
+
+            </select>
+
+
+            <input type="text"
+                   name="valores"
+                   placeholder="Valor a buscar">
+
+
+            <button type="button"
+                    onclick="this.parentElement.remove()">
+
+                Eliminar
+
+            </button>
+
+        `;
+
+
+        // Agregar el filtro
+
+        contenedor.appendChild(
+            nuevoFiltro
+        );
+
+    }
+
+</script>
+
+
+</body>
+
+</html>
