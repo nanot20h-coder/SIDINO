@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import java.util.ArrayList;
 
 @Controller
 public class ReporteController {
@@ -175,17 +176,53 @@ public String buscarReporte(
         Model model
 ) {
 
+    List<String> columnasValidas = new ArrayList<>();
+    List<String> valoresValidos = new ArrayList<>();
+
+    /*
+     * Validamos que ambas listas existan
+     * y recorremos únicamente hasta donde
+     * ambas tengan elementos.
+     */
+    if (columnas != null && valores != null) {
+
+        int cantidad = Math.min(
+                columnas.size(),
+                valores.size()
+        );
+
+        for (int i = 0; i < cantidad; i++) {
+
+            String columna = columnas.get(i);
+            String valor = valores.get(i);
+
+            if (columna != null
+                    && !columna.isBlank()
+                    && valor != null
+                    && !valor.isBlank()) {
+
+                columnasValidas.add(columna);
+                valoresValidos.add(valor);
+            }
+        }
+    }
+
     Reporte reporte;
 
-    if (columnas != null && valores != null
-            && !columnas.isEmpty()
-            && !valores.isEmpty()) {
+    /*
+     * Si existen filtros válidos,
+     * hacemos una búsqueda filtrada.
+     *
+     * Si no existen filtros válidos,
+     * mostramos todos los registros.
+     */
+    if (!columnasValidas.isEmpty()) {
 
         reporte =
                 reporteService.generarReporteFiltrado(
                         tabla,
-                        columnas,
-                        valores
+                        columnasValidas,
+                        valoresValidos
                 );
 
     } else {
@@ -214,15 +251,14 @@ public String buscarReporte(
             reporte
     );
 
-    // Guardamos los filtros utilizados
     model.addAttribute(
             "columnasFiltro",
-            columnas
+            columnasValidas
     );
 
     model.addAttribute(
             "valoresFiltro",
-            valores
+            valoresValidos
     );
 
     return "reportes";
