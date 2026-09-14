@@ -301,6 +301,7 @@ public class RectorDashboard extends DashboardBase {
                 new CampoForm("Año", "anio", "numero"))));
         pestanias.put("Asignaciones", panelAsignacionAcademica());
         pestanias.put("Matrículas", panelMatriculas());
+        pestanias.put("Acudientes", panelAcudientes());
 
         raiz.add(construirPestanias(pestanias));
         return raiz;
@@ -409,6 +410,104 @@ public class RectorDashboard extends DashboardBase {
 
         raiz.add(scroll);
         raiz.add(acciones);
+        return raiz;
+    }
+
+    /** Vincula un acudiente (rol id 6) con un estudiante (rol id 5) en acudiente_estudiante. */
+    private JPanel panelAcudientes() {
+        JPanel raiz = columna();
+
+        List<Map<String, Object>> acudientes = DB.query("SELECT id_usuario, nombre FROM usuario WHERE id_rol=6 ORDER BY nombre");
+        List<Map<String, Object>> estudiantes = DB.query("SELECT id_usuario, nombre FROM usuario WHERE id_rol=5 ORDER BY nombre");
+
+        if (acudientes.isEmpty() || estudiantes.isEmpty()) {
+            StringBuilder faltan = new StringBuilder("Antes de vincular necesitas:\n");
+            if (acudientes.isEmpty()) faltan.append("• Al menos un usuario con rol Acudiente (créalo en «Crear Usuario»).\n");
+            if (estudiantes.isEmpty()) faltan.append("• Al menos un usuario con rol Estudiante (créalo en «Crear Usuario»).\n");
+            raiz.add(Estilos.crearAlertaInfo(faltan.toString()));
+            return raiz;
+        }
+
+        JComboBox<String> comboAcudiente = new JComboBox<>();
+        for (Map<String, Object> a : acudientes) comboAcudiente.addItem(Estilos.texto(a, "nombre"));
+        JComboBox<String> comboEstudiante = new JComboBox<>();
+        for (Map<String, Object> e : estudiantes) comboEstudiante.addItem(Estilos.texto(e, "nombre"));
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6, 6, 6, 6);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        gc.gridx = 0; gc.gridy = 0; form.add(etiqueta("Acudiente:"), gc);
+        gc.gridx = 1; form.add(comboAcudiente, gc);
+        gc.gridx = 0; gc.gridy = 1; form.add(etiqueta("Estudiante:"), gc);
+        gc.gridx = 1; form.add(comboEstudiante, gc);
+
+        BotonRedondeado guardar = new BotonRedondeado("Vincular", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
+        guardar.addActionListener(e -> {
+            int idAcudiente = ((Number) acudientes.get(comboAcudiente.getSelectedIndex()).get("id_usuario")).intValue();
+            int idEstudiante = ((Number) estudiantes.get(comboEstudiante.getSelectedIndex()).get("id_usuario")).intValue();
+
+            long yaExiste = DB.contar("SELECT COUNT(*) FROM acudiente_estudiante WHERE id_acudiente=? AND id_estudiante=?", idAcudiente, idEstudiante);
+            if (yaExiste > 0) {
+                Dialogos.advertencia(this, "Ese acudiente ya está vinculado a ese estudiante.");
+                return;
+            }
+            try {
+                DB.ejecutar("INSERT INTO acudiente_estudiante (id_acudiente, id_estudiante) VALUES (?, ?)", idAcudiente, idEstudiante);
+                registrarHistorial("Vinculó acudiente (ID " + idAcudiente + ") con estudiante (ID " + idEstudiante + ")");
+                Dialogos.exito(this, "Acudiente vinculado correctamente al estudiante.");
+                refrescarModuloActual();
+            } catch (RuntimeException ex) {
+                Dialogos.error(this, "No se pudo vincular:\n" + ex.getMessage());
+            }
+        });
+        gc.gridx = 1; gc.gridy = 2; form.add(guardar, gc);
+
+        raiz.add(Estilos.crearTarjeta("Nuevo vínculo acudiente — estudiante", form));
+        raiz.add(Box.createVerticalStrut(12));
+
+        List<Map<String, Object>> vinculos = DB.query("""
+            SELECT a.nombre AS acudiente, e.nombre AS estudiante, ae.id_acudiente, ae.id_estudiante
+            FROM acudiente_estudiante ae
+            JOIN usuario a ON ae.id_acudiente = a.id_usuario
+            JOIN usuario e ON ae.id_estudiante = e.id_usuario
+            ORDER BY a.nombre, e.nombre
+        """);
+        if (vinculos.isEmpty()) {
+            raiz.add(Estilos.crearEmptyState("Aún no hay acudientes vinculados a estudiantes"));
+            return raiz;
+        }
+        LinkedHashMap<String, String> cols = new LinkedHashMap<>();
+        cols.put("Acudiente", "acudiente"); cols.put("Estudiante", "estudiante");
+        JScrollPane scrollVinculos = Estilos.crearTabla(cols, vinculos);
+        JTable tablaVinculos = (JTable) scrollVinculos.getViewport().getView();
+
+        BotonRedondeado eliminarVinculo = new BotonRedondeado("Eliminar vínculo seleccionado", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
+        eliminarVinculo.addActionListener(e -> {
+            int seleccion = tablaVinculos.getSelectedRow();
+            if (seleccion < 0) { Dialogos.advertencia(this, "Selecciona un vínculo de la tabla."); return; }
+            Object idAcud = vinculos.get(seleccion).get("id_acudiente");
+            Object idEst = vinculos.get(seleccion).get("id_estudiante");
+            boolean confirmar = Dialogos.confirmar(this, "¿Eliminar este vínculo acudiente-estudiante?", "Sí, eliminar", Estilos.ROJO);
+            if (!confirmar) return;
+            try {
+                DB.ejecutar("DELETE FROM acudiente_estudiante WHERE id_acudiente = ? AND id_estudiante = ?", idAcud, idEst);
+                registrarHistorial("Eliminó vínculo acudiente (ID " + idAcud + ") - estudiante (ID " + idEst + ")");
+                Dialogos.exito(this, "Vínculo eliminado correctamente.");
+                refrescarModuloActual();
+            } catch (RuntimeException ex) {
+                Dialogos.error(this, "No se pudo eliminar el vínculo:\n" + ex.getMessage());
+            }
+        });
+        JPanel accionesVinculos = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        accionesVinculos.setOpaque(false);
+        accionesVinculos.add(eliminarVinculo);
+
+        raiz.add(scrollVinculos);
+        raiz.add(accionesVinculos);
         return raiz;
     }
 

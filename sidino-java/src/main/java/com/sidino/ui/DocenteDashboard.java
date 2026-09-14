@@ -317,6 +317,56 @@ public class DocenteDashboard extends DashboardBase {
     private JPanel panelContenido() {
         JPanel raiz = columna();
         raiz.add(Estilos.crearTituloSeccion("Contenido Académico"));
+
+        List<Map<String, Object>> asig = asignaciones();
+        if (!asig.isEmpty()) {
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setOpaque(false);
+            GridBagConstraints gc = new GridBagConstraints();
+            gc.insets = new Insets(4, 4, 4, 4);
+            gc.anchor = GridBagConstraints.WEST;
+            gc.fill = GridBagConstraints.HORIZONTAL;
+
+            JComboBox<String> comboClase = new JComboBox<>();
+            for (Map<String, Object> a : asig) {
+                comboClase.addItem(Estilos.texto(a, "materia") + " — " + Estilos.texto(a, "curso"));
+            }
+            JTextField campoTitulo = new JTextField(22);
+            JTextArea campoDescripcion = new JTextArea(3, 24);
+            campoDescripcion.setLineWrap(true);
+            campoDescripcion.setWrapStyleWord(true);
+
+            gc.gridx = 0; gc.gridy = 0; form.add(etiqueta("Clase:"), gc);
+            gc.gridx = 1; form.add(comboClase, gc);
+
+            gc.gridx = 0; gc.gridy = 1; form.add(etiqueta("Título:"), gc);
+            gc.gridx = 1; form.add(campoTitulo, gc);
+
+            gc.gridx = 0; gc.gridy = 2; form.add(etiqueta("Descripción:"), gc);
+            gc.gridx = 1; form.add(new JScrollPane(campoDescripcion), gc);
+
+            BotonRedondeado guardar = new BotonRedondeado("Subir contenido", 10).colores(Estilos.AZUL, Estilos.AZUL.brighter());
+            guardar.addActionListener(e -> {
+                int idxClase = comboClase.getSelectedIndex();
+                String titulo = campoTitulo.getText().trim();
+                String descripcion = campoDescripcion.getText().trim();
+                if (idxClase < 0 || titulo.isEmpty()) {
+                    Dialogos.advertencia(this, "Selecciona una clase y escribe al menos un título.");
+                    return;
+                }
+                int idAsignacion = ((Number) asig.get(idxClase).get("id_asignacion")).intValue();
+                DB.ejecutar("INSERT INTO contenido (id_asignacion, titulo, descripcion) VALUES (?,?,?)",
+                        idAsignacion, titulo, descripcion);
+                Dialogos.exito(this, "Contenido subido correctamente.");
+                mostrarModulo("contenido");
+            });
+            gc.gridx = 0; gc.gridy = 3; gc.gridwidth = 2;
+            form.add(guardar, gc);
+
+            raiz.add(Estilos.crearTarjeta("Subir nuevo material", form));
+            raiz.add(Box.createVerticalStrut(12));
+        }
+
         List<Map<String, Object>> c = contenidos();
         if (c.isEmpty()) { raiz.add(Estilos.crearEmptyState("No has subido contenidos aún")); return raiz; }
         LinkedHashMap<String, String> cols = new LinkedHashMap<>();
