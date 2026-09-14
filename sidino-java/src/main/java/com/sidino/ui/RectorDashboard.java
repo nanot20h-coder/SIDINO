@@ -697,23 +697,6 @@ public class RectorDashboard extends DashboardBase {
         raiz.add(Estilos.crearTabla(cols, h));
         return raiz;
     }
-
-<<<<<<< HEAD
-    private JPanel panelReportes() {
-        long totalUsuarios = DB.contar("SELECT COUNT(*) FROM usuario");
-        long totalDocentes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=4");
-        long totalEstudiantes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=5");
-        JPanel raiz = columna();
-        raiz.add(Estilos.crearTituloSeccion("Reportes Generales"));
-        raiz.add(Estilos.crearGridStats(
-                Estilos.crearStatCard(String.valueOf(totalUsuarios), "Usuarios totales", Estilos.ROJO),
-                Estilos.crearStatCard(String.valueOf(totalDocentes), "Docentes", Estilos.AZUL),
-                Estilos.crearStatCard(String.valueOf(totalEstudiantes), "Estudiantes", Estilos.VERDE)
-        ));
-        return raiz;
-    }
-
-=======
 private JPanel panelReportes() {
     long totalUsuarios = DB.contar("SELECT COUNT(*) FROM usuario");
     long totalDocentes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=4");
@@ -757,14 +740,9 @@ private void abrirAplicacionReportes() {
         );
     }
 }
->>>>>>> rafael
     private JLabel etiqueta(String texto) {
         JLabel l = new JLabel(texto);
         l.setForeground(Estilos.TEXTO_SEC);
         return l;
     }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> rafael
