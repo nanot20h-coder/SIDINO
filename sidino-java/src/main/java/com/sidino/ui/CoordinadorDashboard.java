@@ -3,6 +3,8 @@ package com.sidino.ui;
 import com.sidino.core.DB;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.Estilos;
+import com.sidino.ui.componentes.BotonRedondeado;
+import com.sidino.ui.componentes.Dialogos;
 
 import javax.swing.*;
 import java.awt.*;
@@ -621,17 +623,52 @@ public class CoordinadorDashboard extends DashboardBase {
         }
     }
 
-    private JPanel panelReportes() {
-        long totalObs = DB.contar("SELECT COUNT(*) FROM observador");
-        long totalCit = DB.contar("SELECT COUNT(*) FROM citacion");
-        JPanel raiz = columna();
-        raiz.add(Estilos.crearTituloSeccion("Reportes de Coordinación"));
-        raiz.add(Estilos.crearGridStats(
-                Estilos.crearStatCard(String.valueOf(totalObs), "Total observaciones", Estilos.NARANJA),
-                Estilos.crearStatCard(String.valueOf(totalCit), "Total citaciones", Estilos.ROJO)
-        ));
-        raiz.add(Box.createVerticalStrut(16));
-        raiz.add(Estilos.crearAlertaInfo("Los reportes detallados estarán disponibles cuando se registren más datos en el sistema."));
-        return raiz;
+private JPanel panelReportes() {
+    long totalUsuarios = DB.contar("SELECT COUNT(*) FROM usuario");
+    long totalDocentes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=4");
+    long totalEstudiantes = DB.contar("SELECT COUNT(*) FROM usuario WHERE id_rol=5");
+
+    JPanel raiz = columna();
+
+    raiz.add(Estilos.crearTituloSeccion("Reportes Generales"));
+
+    raiz.add(Estilos.crearGridStats(
+            Estilos.crearStatCard(String.valueOf(totalUsuarios), "Usuarios totales", Estilos.ROJO),
+            Estilos.crearStatCard(String.valueOf(totalDocentes), "Docentes", Estilos.AZUL),
+            Estilos.crearStatCard(String.valueOf(totalEstudiantes), "Estudiantes", Estilos.VERDE)
+    ));
+
+    raiz.add(Box.createVerticalStrut(20));
+
+    BotonRedondeado btnReportes =
+            new BotonRedondeado("Generar reportes", 10)
+                    .colores(Estilos.ROJO, Estilos.ROJO.brighter());
+
+    btnReportes.addActionListener(e -> abrirAplicacionReportes());
+
+    JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    acciones.setOpaque(false);
+    acciones.add(btnReportes);
+
+    raiz.add(acciones);
+
+    return raiz;
+}
+private void abrirAplicacionReportes() {
+    try {
+        Desktop.getDesktop().browse(
+                new URI("http://localhost:8080/")
+        );
+    } catch (Exception ex) {
+        Dialogos.error(
+                this,
+                "No se pudo abrir la aplicación de reportes:\n" + ex.getMessage()
+        );
+    }
+}
+    private JLabel etiqueta(String texto) {
+        JLabel l = new JLabel(texto);
+        l.setForeground(Estilos.TEXTO_SEC);
+        return l;
     }
 }
