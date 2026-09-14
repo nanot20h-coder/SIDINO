@@ -1,0 +1,40 @@
+# ==========================================
+# Archivos compilados (El "pastel horneado")
+# ==========================================
+*.class
+*.jar
+*.war
+*.ear
+target/
+
+# ==========================================
+# Logs y bases de datos locales
+# ==========================================
+*.log
+*.sqlite
+
+# ==========================================
+# Archivos de Editores de Código (IDEs)
+# (Para que tu configuración no pise la de tus compañeros)
+# ==========================================
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/
+
+# ==========================================
+# Archivos del Sistema Operativo
+# ==========================================
+.DS_Store
+Thumbs.db
