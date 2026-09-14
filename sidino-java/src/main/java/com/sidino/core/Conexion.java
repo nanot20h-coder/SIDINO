@@ -9,7 +9,7 @@ import java.sql.SQLException;
  * Misma configuración que el proyecto original.
  */
 public class Conexion {
-    private static final String URL      = "jdbc:mysql://127.0.0.1:3306/sidino";
+    private static final String URL      = "jdbc:mariadb://127.0.0.1:3306/sidino";
     private static final String USUARIO  = "root";
     private static final String PASSWORD = "";
 
