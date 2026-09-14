@@ -20,14 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel de inicio de sesión (ya no es una ventana propia). Mismo diseño
- * visual que el Login original (fondo con burbujas, título "SIDINO"
- * degradado, campos redondeados), pero:
- *  - corregido el bug donde el placeholder de la contraseña se superponía
- *    con el texto escrito (ahora se oculta al enfocar/escribir, igual que
- *    hace el campo de usuario).
- *  - al autenticar, no cierra ninguna ventana ni abre una nueva: le pide a
- *    AppFrame que cambie el contenido al dashboard correspondiente.
+ * Panel de inicio de sesión con diseño dinámico.
+ * Los botones y campos se adaptan a la pantalla y la tarjeta contenedora
+ * ajusta su tamaño exactamente al contenido, evitando espacios vacíos.
  */
 public class LoginPanel extends JPanel {
 
@@ -41,6 +36,9 @@ public class LoginPanel extends JPanel {
         }
     }
 
+    private static final String PLACEHOLDER_USUARIO = "Escribe tu usuario (correo):";
+    private static final String PLACEHOLDER_PASSWORD = "Introduce tu contraseña";
+
     private final List<Burbuja> burbujas = new ArrayList<>();
     private final JLabel bienvenidos = new JLabel("Bienvenidos");
     private final JLabel subBienvenidos = new JLabel("Inicia sesión para empezar tu día");
@@ -50,45 +48,50 @@ public class LoginPanel extends JPanel {
     private final JLabel errPass = new JLabel("La contraseña no puede estar vacía");
     private final BotonRedondeado botonLogin = new BotonRedondeado("Iniciar Sesión", 15);
 
-    private static final String PLACEHOLDER_USUARIO = "Escribe tu usuario (correo):";
-    private static final String PLACEHOLDER_PASSWORD = "Introduce tu contraseña";
     private char echoCharReal;
     private boolean passwordEsPlaceholder = true;
-    /** Se pone en true la primera vez que se crean y agregan los componentes (ver construirComponentes()). */
     private boolean construido = false;
 
     public LoginPanel() {
         setLayout(null);
+
+        // Animación de burbujas en el fondo
         Timer timer = new Timer(30, e -> {
             for (Burbuja b : burbujas) {
                 b.y -= b.velocidad;
-                if (b.y < -20) { b.y = getHeight() + 20; b.x = (float) (Math.random() * getWidth()); }
+                if (b.y < -20) { 
+                    b.y = getHeight() + 20; 
+                    b.x = (float) (Math.random() * getWidth()); 
+                }
             }
             repaint();
         });
         for (int i = 0; i < 40; i++) burbujas.add(new Burbuja());
         timer.start();
 
-        // Enter para iniciar sesión: los JTextField/JPasswordField ya disparan
-        // un ActionEvent al presionar Enter, así que basta con escuchar eso
-        // en cualquiera de los dos campos (usuario o contraseña) para poder
-        // iniciar sesión sin tener que hacer clic en el botón.
+        // Listeners de autenticación
         botonLogin.addActionListener(e -> intentarLogin());
         campoUsuario.addActionListener(e -> intentarLogin());
         campoPassword.addActionListener(e -> intentarLogin());
 
-        // Responsive: cuando el panel cambia de tamaño (por ejemplo al
-        // maximizar/restaurar la ventana), se vuelven a calcular las
-        // posiciones de todos los componentes en función del nuevo ancho/alto.
+        // Evento para recalcular al redimensionar la ventana
         addComponentListener(new ComponentAdapter() {
-            @Override public void componentResized(ComponentEvent e) {
-                if (construido) {
-                    posicionarComponentes();
-                    revalidate();
-                    repaint();
-                }
+            @Override 
+            public void componentResized(ComponentEvent e) {
+                revalidate();
+                repaint();
             }
         });
+    }
+
+    @Override
+    public void doLayout() {
+        super.doLayout();
+        if (!construido) {
+            construirComponentes();
+            construido = true;
+        }
+        posicionarComponentes();
     }
 
     private void intentarLogin() {
@@ -109,7 +112,11 @@ public class LoginPanel extends JPanel {
             errPass.setVisible(false);
         }
 
-        if (hayError) return;
+        if (hayError) {
+            revalidate();
+            repaint();
+            return;
+        }
 
         String correo = campoUsuario.getText().trim();
         String password = new String(campoPassword.getPassword());
@@ -152,30 +159,34 @@ public class LoginPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (!construido) {
-            construirComponentes();
-            construido = true;
-        }
-        // Siempre se reposicionan los componentes con el tamaño actual del
-        // panel (no solo la primera vez), para que el login sea responsive
-        // si la ventana cambia de tamaño.
-        posicionarComponentes();
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Fondo degradado
         GradientPaint gradiante = new GradientPaint(0, 0, new Color(35, 60, 100), 0, getHeight(), new Color(5, 10, 30));
         g2d.setPaint(gradiante);
         g2d.fillRect(0, 0, getWidth(), getHeight());
-        g2d.setColor(new Color(255, 255, 255, 50));
-        for (Burbuja b : burbujas) g2d.fillOval((int) b.x, (int) b.y, (int) b.tamanio, (int) b.tamanio);
 
+        // Dibujo de burbujas
+        g2d.setColor(new Color(255, 255, 255, 50));
+        for (Burbuja b : burbujas) {
+            g2d.fillOval((int) b.x, (int) b.y, (int) b.tamanio, (int) b.tamanio);
+        }
+
+        // Obtener dimensiones de la tarjeta (calculadas en base al contenido)
+        Rectangle t = obtenerDimensionesTarjeta();
+
+        // Título "SIDINO" adaptado a la parte superior de la tarjeta
         Font fuenteBase = new Font("Arial Black", Font.BOLD, 120);
         g2d.setFont(fuenteBase);
         FontMetrics fm = g2d.getFontMetrics();
-        float anchoObjetivo = getWidth() * 0.80f;
+
+        float anchoObjetivo = getWidth() * 0.65f;
         float escala = anchoObjetivo / fm.stringWidth("SIDINO");
         int textoX = (int) ((getWidth() / escala - fm.stringWidth("SIDINO")) / 2);
-        int textoY = (getHeight() - 1300 / 2);
+        int textoY = (int) (t.y * 0.65f);
+
         Graphics2D g2Titulo = (Graphics2D) g2d.create();
         g2Titulo.scale(escala, 1.0);
         LinearGradientPaint gradiente1 = new LinearGradientPaint(
@@ -183,28 +194,22 @@ public class LoginPanel extends JPanel {
                 new float[]{0.0f, 0.5f, 1.0f},
                 new Color[]{new Color(0, 180, 195), new Color(80, 210, 220), new Color(0, 180, 195)});
         g2Titulo.setPaint(gradiente1);
-        g2Titulo.drawString("SIDINO", textoX, textoY);
+        g2Titulo.drawString("SIDINO", textoX, Math.max(30, textoY));
         g2Titulo.dispose();
 
+        // Dibujo del panel contenedor (la tarjeta se ajusta exactamente a los elementos)
         g2d.setColor(new Color(15, 35, 70, 220));
-        g2d.fillRoundRect((getWidth() - 400) / 2, (getHeight() - 400) / 2, 400, 400, 30, 30);
+        g2d.fillRoundRect(t.x, t.y, t.width, t.height, 30, 30);
     }
 
-    /**
-     * Crea estilos, listeners y agrega los componentes al panel. Se ejecuta
-     * UNA SOLA VEZ (controlado por el flag 'construido'); volver a llamar
-     * add() sobre los mismos componentes los duplicaría en el panel.
-     */
     private void construirComponentes() {
         bienvenidos.setForeground(new Color(220, 235, 255));
-        bienvenidos.setFont(new Font("Arial", Font.BOLD, 24));
         bienvenidos.setHorizontalAlignment(JLabel.CENTER);
 
         subBienvenidos.setForeground(new Color(140, 160, 190));
-        subBienvenidos.setFont(new Font("Arial", Font.PLAIN, 16));
         subBienvenidos.setHorizontalAlignment(JLabel.CENTER);
 
-        // ── Campo de usuario (placeholder simulado con texto que se limpia al enfocar) ──
+        // Campo Usuario
         campoUsuario.setText(PLACEHOLDER_USUARIO);
         campoUsuario.setForeground(new Color(140, 160, 190));
         campoUsuario.setBackground(new Color(40, 65, 110));
@@ -224,21 +229,18 @@ public class LoginPanel extends JPanel {
                 }
             }
         });
+
         errUsu.setForeground(new Color(255, 80, 80));
-        errUsu.setFont(new Font("Arial", Font.PLAIN, 14));
+        errUsu.setHorizontalAlignment(JLabel.LEFT);
         errUsu.setVisible(false);
 
-        // ── Campo de contraseña: el placeholder ahora es TEXTO REAL dentro
-        //    del propio campo (igual que el de usuario), no una etiqueta
-        //    superpuesta. Para eso se desactiva temporalmente el "echo char"
-        //    (el caracter que oculta la contraseña) mientras se muestra el
-        //    placeholder, y se reactiva apenas el usuario empieza a escribir.
-        //    Así no hay dos textos pisándose nunca. ──
+        // Campo Contraseña
         echoCharReal = campoPassword.getEchoChar();
         campoPassword.setCaretColor(new Color(0, 230, 210));
         campoPassword.setBackground(new Color(40, 65, 110));
         campoPassword.setMargin(new Insets(0, 15, 0, 0));
         mostrarPlaceholderPassword();
+
         campoPassword.addFocusListener(new FocusAdapter() {
             @Override public void focusGained(FocusEvent e) {
                 if (passwordEsPlaceholder) ocultarPlaceholderPassword();
@@ -247,36 +249,138 @@ public class LoginPanel extends JPanel {
                 if (campoPassword.getPassword().length == 0) mostrarPlaceholderPassword();
             }
         });
+
         errPass.setForeground(new Color(255, 80, 80));
-        errPass.setFont(new Font("Arial", Font.PLAIN, 14));
+        errPass.setHorizontalAlignment(JLabel.LEFT);
         errPass.setVisible(false);
 
         add(bienvenidos);
         add(subBienvenidos);
-        add(errUsu);
         add(campoUsuario);
-        add(errPass);
+        add(errUsu);
         add(campoPassword);
+        add(errPass);
         add(botonLogin);
     }
 
     /**
-     * Calcula y aplica los bounds (posición y tamaño) de todos los
-     * componentes en función del ancho/alto ACTUAL del panel. Se llama al
-     * construir el panel por primera vez y cada vez que el panel cambia de
-     * tamaño, para que el formulario de login sea responsive.
+     * Calcula las dimensiones del panel ajustándose a los componentes internos.
+     */
+    private Rectangle obtenerDimensionesTarjeta() {
+        int screenW = getWidth();
+        int screenH = getHeight();
+
+        // 1. Los botones y campos se escalan con la pantalla
+        int compAncho = Math.max(280, Math.min(450, (int) (screenW * 0.28f)));
+        int campoAlto = Math.max(36, Math.min(48, (int) (screenH * 0.052f)));
+        int botonAlto = Math.max(40, Math.min(52, (int) (screenH * 0.058f)));
+
+        int fontTituloSize = Math.max(20, Math.min(26, (int) (compAncho * 0.07f)));
+        int fontSubSize = Math.max(12, Math.min(15, (int) (compAncho * 0.045f)));
+
+        int hBien = (int) (fontTituloSize * 1.3f);
+        int hSub = (int) (fontSubSize * 1.3f);
+        int hErrUsu = errUsu.isVisible() ? 16 : 0;
+        int hErrPass = errPass.isVisible() ? 16 : 0;
+
+        int gapPequeno = Math.max(4, (int) (screenH * 0.008f));
+        int gapMedio = Math.max(8, (int) (screenH * 0.018f));
+        int gapGrande = Math.max(14, (int) (screenH * 0.028f));
+
+        // 2. Suma total del alto ocupado por los elementos
+        int altoContenido = hBien + gapPequeno
+                + hSub + gapGrande
+                + campoAlto + (errUsu.isVisible() ? gapPequeno + hErrUsu : 0) + gapMedio
+                + campoAlto + (errPass.isVisible() ? gapPequeno + hErrPass : 0) + gapGrande
+                + botonAlto;
+
+        // 3. Márgenes internos (padding) del panel alrededor de los elementos
+        int padH = Math.max(24, (int) (compAncho * 0.10f));
+        int padV = Math.max(24, (int) (screenH * 0.035f));
+
+        int tarjetaAncho = compAncho + (padH * 2);
+        int tarjetaAlto = altoContenido + (padV * 2);
+
+        int tarjetaX = (screenW - tarjetaAncho) / 2;
+        int tarjetaY = (screenH - tarjetaAlto) / 2 + (int) (screenH * 0.03f);
+
+        return new Rectangle(tarjetaX, tarjetaY, tarjetaAncho, tarjetaAlto);
+    }
+
+    /**
+     * Posiciona los componentes responsivamente dentro del panel envolvente.
      */
     private void posicionarComponentes() {
-        int ancho = getWidth();
-        int alto = getHeight();
+        int screenW = getWidth();
+        int screenH = getHeight();
 
-        bienvenidos.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 100, 300, 30);
-        subBienvenidos.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 138, 300, 20);
-        campoUsuario.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 180, 300, 35);
-        errUsu.setBounds((ancho - 275) / 2, (alto - 500) / 2 + 150, 300, 35);
-        campoPassword.setBounds((ancho - 300) / 2, (alto - 375) / 2 + 180, 300, 35);
-        errPass.setBounds((ancho - 275) / 2, (alto - 375) / 2 + 150, 300, 35);
-        botonLogin.setBounds((ancho - 350) / 2, (alto - 250) / 2 + 180, 350, 45);
+        int compAncho = Math.max(280, Math.min(450, (int) (screenW * 0.28f)));
+        int campoAlto = Math.max(36, Math.min(48, (int) (screenH * 0.052f)));
+        int botonAlto = Math.max(40, Math.min(52, (int) (screenH * 0.058f)));
+
+        int fontTituloSize = Math.max(20, Math.min(26, (int) (compAncho * 0.07f)));
+        int fontSubSize = Math.max(12, Math.min(15, (int) (compAncho * 0.045f)));
+        int fontCampoSize = Math.max(13, Math.min(16, (int) (compAncho * 0.048f)));
+
+        bienvenidos.setFont(new Font("Arial", Font.BOLD, fontTituloSize));
+        subBienvenidos.setFont(new Font("Arial", Font.PLAIN, fontSubSize));
+        campoUsuario.setFont(new Font("Arial", Font.PLAIN, fontCampoSize));
+        campoPassword.setFont(new Font("Arial", Font.PLAIN, fontCampoSize));
+        botonLogin.setFont(new Font("Arial", Font.BOLD, fontCampoSize + 1));
+
+        errUsu.setFont(new Font("Arial", Font.PLAIN, fontCampoSize - 2));
+        errPass.setFont(new Font("Arial", Font.PLAIN, fontCampoSize - 2));
+
+        int gapPequeno = Math.max(4, (int) (screenH * 0.008f));
+        int gapMedio = Math.max(8, (int) (screenH * 0.018f));
+        int gapGrande = Math.max(14, (int) (screenH * 0.028f));
+
+        int hBien = (int) (fontTituloSize * 1.3f);
+        int hSub = (int) (fontSubSize * 1.3f);
+        int hErrUsu = errUsu.isVisible() ? 16 : 0;
+        int hErrPass = errPass.isVisible() ? 16 : 0;
+
+        // Obtener el rectángulo exacto del panel
+        Rectangle t = obtenerDimensionesTarjeta();
+
+        int padH = Math.max(24, (int) (compAncho * 0.10f));
+        int padV = Math.max(24, (int) (screenH * 0.035f));
+
+        int compX = t.x + padH;
+        int yCursor = t.y + padV;
+
+        // 1. Título "Bienvenidos"
+        bienvenidos.setBounds(compX, yCursor, compAncho, hBien);
+        yCursor += hBien + gapPequeno;
+
+        // 2. Subtítulo
+        subBienvenidos.setBounds(compX, yCursor, compAncho, hSub);
+        yCursor += hSub + gapGrande;
+
+        // 3. Campo Usuario
+        campoUsuario.setBounds(compX, yCursor, compAncho, campoAlto);
+        yCursor += campoAlto;
+
+        if (errUsu.isVisible()) {
+            yCursor += gapPequeno;
+            errUsu.setBounds(compX, yCursor, compAncho, hErrUsu);
+            yCursor += hErrUsu;
+        }
+        yCursor += gapMedio;
+
+        // 4. Campo Contraseña
+        campoPassword.setBounds(compX, yCursor, compAncho, campoAlto);
+        yCursor += campoAlto;
+
+        if (errPass.isVisible()) {
+            yCursor += gapPequeno;
+            errPass.setBounds(compX, yCursor, compAncho, hErrPass);
+            yCursor += hErrPass;
+        }
+        yCursor += gapGrande;
+
+        // 5. Botón Iniciar Sesión
+        botonLogin.setBounds(compX, yCursor, compAncho, botonAlto);
     }
 
     private void mostrarPlaceholderPassword() {
