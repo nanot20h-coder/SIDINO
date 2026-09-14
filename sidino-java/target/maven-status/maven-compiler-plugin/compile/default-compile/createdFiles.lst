@@ -38,5 +38,6 @@ com\sidino\ui\PanelAjustes.class
 com\sidino\ui\LoginPanel.class
 com\sidino\ui\DashboardBase$BotonNav.class
 com\sidino\ui\componentes\RPF.class
+com\sidino\ui\LoginPanel$3.class
 com\sidino\ui\DashboardBase$3.class
 com\sidino\ui\DashboardFactory.class

@@ -9,6 +9,8 @@ import com.sidino.ui.componentes.RTF;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.sql.Connection;
@@ -52,7 +54,8 @@ public class LoginPanel extends JPanel {
     private static final String PLACEHOLDER_PASSWORD = "Introduce tu contraseña";
     private char echoCharReal;
     private boolean passwordEsPlaceholder = true;
-    private boolean inicializacion = false;
+    /** Se pone en true la primera vez que se crean y agregan los componentes (ver construirComponentes()). */
+    private boolean construido = false;
 
     public LoginPanel() {
         setLayout(null);
@@ -66,7 +69,26 @@ public class LoginPanel extends JPanel {
         for (int i = 0; i < 40; i++) burbujas.add(new Burbuja());
         timer.start();
 
+        // Enter para iniciar sesión: los JTextField/JPasswordField ya disparan
+        // un ActionEvent al presionar Enter, así que basta con escuchar eso
+        // en cualquiera de los dos campos (usuario o contraseña) para poder
+        // iniciar sesión sin tener que hacer clic en el botón.
         botonLogin.addActionListener(e -> intentarLogin());
+        campoUsuario.addActionListener(e -> intentarLogin());
+        campoPassword.addActionListener(e -> intentarLogin());
+
+        // Responsive: cuando el panel cambia de tamaño (por ejemplo al
+        // maximizar/restaurar la ventana), se vuelven a calcular las
+        // posiciones de todos los componentes en función del nuevo ancho/alto.
+        addComponentListener(new ComponentAdapter() {
+            @Override public void componentResized(ComponentEvent e) {
+                if (construido) {
+                    posicionarComponentes();
+                    revalidate();
+                    repaint();
+                }
+            }
+        });
     }
 
     private void intentarLogin() {
@@ -130,10 +152,14 @@ public class LoginPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (!inicializacion) {
-            inicializar();
-            inicializacion = true;
+        if (!construido) {
+            construirComponentes();
+            construido = true;
         }
+        // Siempre se reposicionan los componentes con el tamaño actual del
+        // panel (no solo la primera vez), para que el login sea responsive
+        // si la ventana cambia de tamaño.
+        posicionarComponentes();
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -164,19 +190,21 @@ public class LoginPanel extends JPanel {
         g2d.fillRoundRect((getWidth() - 400) / 2, (getHeight() - 400) / 2, 400, 400, 30, 30);
     }
 
-    private void inicializar() {
-        bienvenidos.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 100, 300, 30);
+    /**
+     * Crea estilos, listeners y agrega los componentes al panel. Se ejecuta
+     * UNA SOLA VEZ (controlado por el flag 'construido'); volver a llamar
+     * add() sobre los mismos componentes los duplicaría en el panel.
+     */
+    private void construirComponentes() {
         bienvenidos.setForeground(new Color(220, 235, 255));
         bienvenidos.setFont(new Font("Arial", Font.BOLD, 24));
         bienvenidos.setHorizontalAlignment(JLabel.CENTER);
 
-        subBienvenidos.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 138, 300, 20);
         subBienvenidos.setForeground(new Color(140, 160, 190));
         subBienvenidos.setFont(new Font("Arial", Font.PLAIN, 16));
         subBienvenidos.setHorizontalAlignment(JLabel.CENTER);
 
         // ── Campo de usuario (placeholder simulado con texto que se limpia al enfocar) ──
-        campoUsuario.setBounds((getWidth() - 300) / 2, (getHeight() - 500) / 2 + 180, 300, 35);
         campoUsuario.setText(PLACEHOLDER_USUARIO);
         campoUsuario.setForeground(new Color(140, 160, 190));
         campoUsuario.setBackground(new Color(40, 65, 110));
@@ -199,7 +227,6 @@ public class LoginPanel extends JPanel {
         errUsu.setForeground(new Color(255, 80, 80));
         errUsu.setFont(new Font("Arial", Font.PLAIN, 14));
         errUsu.setVisible(false);
-        errUsu.setBounds((getWidth() - 275) / 2, (getHeight() - 500) / 2 + 150, 300, 35);
 
         // ── Campo de contraseña: el placeholder ahora es TEXTO REAL dentro
         //    del propio campo (igual que el de usuario), no una etiqueta
@@ -207,7 +234,6 @@ public class LoginPanel extends JPanel {
         //    (el caracter que oculta la contraseña) mientras se muestra el
         //    placeholder, y se reactiva apenas el usuario empieza a escribir.
         //    Así no hay dos textos pisándose nunca. ──
-        campoPassword.setBounds((getWidth() - 300) / 2, (getHeight() - 375) / 2 + 180, 300, 35);
         echoCharReal = campoPassword.getEchoChar();
         campoPassword.setCaretColor(new Color(0, 230, 210));
         campoPassword.setBackground(new Color(40, 65, 110));
@@ -224,9 +250,6 @@ public class LoginPanel extends JPanel {
         errPass.setForeground(new Color(255, 80, 80));
         errPass.setFont(new Font("Arial", Font.PLAIN, 14));
         errPass.setVisible(false);
-        errPass.setBounds((getWidth() - 275) / 2, (getHeight() - 375) / 2 + 150, 300, 35);
-
-        botonLogin.setBounds((getWidth() - 350) / 2, (getHeight() - 250) / 2 + 180, 350, 45);
 
         add(bienvenidos);
         add(subBienvenidos);
@@ -235,6 +258,25 @@ public class LoginPanel extends JPanel {
         add(errPass);
         add(campoPassword);
         add(botonLogin);
+    }
+
+    /**
+     * Calcula y aplica los bounds (posición y tamaño) de todos los
+     * componentes en función del ancho/alto ACTUAL del panel. Se llama al
+     * construir el panel por primera vez y cada vez que el panel cambia de
+     * tamaño, para que el formulario de login sea responsive.
+     */
+    private void posicionarComponentes() {
+        int ancho = getWidth();
+        int alto = getHeight();
+
+        bienvenidos.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 100, 300, 30);
+        subBienvenidos.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 138, 300, 20);
+        campoUsuario.setBounds((ancho - 300) / 2, (alto - 500) / 2 + 180, 300, 35);
+        errUsu.setBounds((ancho - 275) / 2, (alto - 500) / 2 + 150, 300, 35);
+        campoPassword.setBounds((ancho - 300) / 2, (alto - 375) / 2 + 180, 300, 35);
+        errPass.setBounds((ancho - 275) / 2, (alto - 375) / 2 + 150, 300, 35);
+        botonLogin.setBounds((ancho - 350) / 2, (alto - 250) / 2 + 180, 350, 45);
     }
 
     private void mostrarPlaceholderPassword() {
