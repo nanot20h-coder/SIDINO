@@ -435,6 +435,19 @@ ALTER TABLE `asignacion_academica`
   ADD KEY `fk_asig_horario` (`id_horario`),
   ADD KEY `fk_asig_curso` (`id_curso`);
 
+-- Reglas de unicidad para los catálogos académicos.
+ALTER TABLE `materia`
+  ADD UNIQUE KEY `uq_materia_nombre` (`nombre`);
+
+ALTER TABLE `salon`
+  ADD UNIQUE KEY `uq_salon_nombre_ubicacion` (`nombre`, `ubicacion`);
+
+ALTER TABLE `horario`
+  ADD UNIQUE KEY `uq_horario_horas` (`hora_inicio`, `hora_fin`);
+
+ALTER TABLE `matricula`
+  ADD UNIQUE KEY `uq_matricula_estudiante_asignacion` (`id_estudiante`, `id_asignacion`);
+
 --
 -- Indices de la tabla `atributo`
 --

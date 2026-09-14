@@ -1,12 +1,17 @@
 package com.sidino.core;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.sql.Date;
 
 /**
  * Capa de acceso a datos genérica.
@@ -163,10 +168,71 @@ public class DB {
         return id[0];
     }
 
-    /** Crea una matrícula. Las reglas de disponibilidad las gestiona la base de datos. */
+    public static long crearMateria(String nombre) {
+        return crearCatalogo("materia", "nombre", nombre,
+                "Ya existe una materia con ese nombre.");
+    }
+
+    public static long crearSalon(String nombre, int capacidad, String ubicacion) {
+        final long[] id = {0};
+        transaccion(con -> {
+            if (contar(con, "SELECT COUNT(*) FROM salon WHERE nombre = ? AND ubicacion = ?",
+                    nombre, ubicacion) > 0) {
+                throw new IllegalStateException("Ya existe un salón con ese nombre y ubicación.");
+            }
+            id[0] = insertar(con,
+                    "INSERT INTO salon (nombre, capacidad, ubicacion) VALUES (?, ?, ?)",
+                    nombre, capacidad, ubicacion);
+        });
+        return id[0];
+    }
+
+    public static long crearHorario(String dia, String horaInicio, String horaFin) {
+        final long[] id = {0};
+        transaccion(con -> {
+            if (contar(con, "SELECT COUNT(*) FROM horario WHERE hora_inicio = ? AND hora_fin = ?",
+                    horaInicio, horaFin) > 0) {
+                throw new IllegalStateException("Ya existe un horario con esa hora de inicio y fin.");
+            }
+            id[0] = insertar(con,
+                    "INSERT INTO horario (dia, hora_inicio, hora_fin) VALUES (?, ?, ?)",
+                    dia, horaInicio, horaFin);
+        });
+        return id[0];
+    }
+
+    private static long crearCatalogo(String tabla, String columna, String valor, String mensajeDuplicado) {
+        final long[] id = {0};
+        transaccion(con -> {
+            if (contar(con, "SELECT COUNT(*) FROM " + tabla + " WHERE " + columna + " = ?", valor) > 0) {
+                throw new IllegalStateException(mensajeDuplicado);
+            }
+            id[0] = insertar(con, "INSERT INTO " + tabla + " (" + columna + ") VALUES (?)", valor);
+        });
+        return id[0];
+    }
+
+    /** Crea una matrícula y evita duplicar al estudiante o asignarlo a otro docente. */
     public static long crearMatricula(int idEstudiante, int idAsignacion) {
         final long[] id = {0};
         transaccion(con -> {
+            if (contar(con, """
+                    SELECT COUNT(*)
+                    FROM matricula mat
+                    JOIN asignacion_academica aa ON aa.id_asignacion = mat.id_asignacion
+                    WHERE mat.id_estudiante = ? AND mat.id_asignacion = ?
+                    """, idEstudiante, idAsignacion) > 0) {
+                throw new IllegalStateException("El estudiante ya está matriculado en esa clase.");
+            }
+            if (contar(con, """
+                    SELECT COUNT(*)
+                    FROM matricula mat
+                    JOIN asignacion_academica existente ON existente.id_asignacion = mat.id_asignacion
+                    JOIN asignacion_academica nueva ON nueva.id_asignacion = ?
+                    WHERE mat.id_estudiante = ? AND existente.id_docente <> nueva.id_docente
+                    """, idAsignacion, idEstudiante) > 0) {
+                throw new IllegalStateException("El estudiante ya fue matriculado con otro docente.");
+            }
             id[0] = insertar(con,
                     "INSERT INTO matricula (id_estudiante, id_asignacion) VALUES (?, ?)",
                     idEstudiante, idAsignacion);

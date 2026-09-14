@@ -565,7 +565,12 @@ public class RectorDashboard extends DashboardBase {
             String columnasSql = String.join(", ", campos.stream().map(CampoForm::columna).toList());
             String signos = String.join(", ", campos.stream().map(c -> "?").toList());
             try {
-                long nuevoId = DB.ejecutarYObtenerId("INSERT INTO " + tabla + " (" + columnasSql + ") VALUES (" + signos + ")", valores);
+                long nuevoId = switch (tabla) {
+                    case "materia" -> DB.crearMateria((String) valores[0]);
+                    case "salon" -> DB.crearSalon((String) valores[0], (Integer) valores[1], (String) valores[2]);
+                    case "horario" -> DB.crearHorario((String) valores[0], (String) valores[1], (String) valores[2]);
+                    default -> DB.ejecutarYObtenerId("INSERT INTO " + tabla + " (" + columnasSql + ") VALUES (" + signos + ")", valores);
+                };
                 registrarHistorial("Creó " + articulo + " (ID " + nuevoId + ") en " + tabla);
                 Dialogos.exito(this, "Se agregó " + articulo + " correctamente.");
                 refrescarModuloActual();
