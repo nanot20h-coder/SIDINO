@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.awt.Desktop;
+import java.net.URI;
 
 public class CoordinadorDashboard extends DashboardBase {
 
@@ -618,8 +620,6 @@ public class CoordinadorDashboard extends DashboardBase {
             }
         }
     }
-
-    // ══════════════════════════ MÓDULO REPORTES (sin cambios) ══════════════════════════
 
     private JPanel panelReportes() {
         long totalObs = DB.contar("SELECT COUNT(*) FROM observador");
