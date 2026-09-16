@@ -3,6 +3,8 @@ package com.sidino.ui;
 import com.sidino.core.DB;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.BotonRedondeado;
+import com.sidino.ui.componentes.CampoPassword;
+import com.sidino.ui.componentes.CampoTexto;
 import com.sidino.ui.componentes.Dialogos;
 import com.sidino.ui.componentes.Estilos;
 
@@ -22,12 +24,12 @@ public class RectorDashboard extends DashboardBase {
 
     public RectorDashboard() {
         super("Rector — Dashboard", "Rector — Panel de Control", Estilos.ROJO, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("usuarios", "👥", "Usuarios"),
-                new ItemNav("crear_usuario", "➕", "Crear Usuario"),
-                new ItemNav("asignaciones", "🗓", "Gestión Académica"),
-                new ItemNav("historial", "🕑", "Historial"),
-                new ItemNav("reportes", "📈", "Reportes")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("usuarios", "usuarios", "Usuarios"),
+                new ItemNav("crear_usuario", "agregar", "Crear Usuario"),
+                new ItemNav("asignaciones", "academico", "Gestión Académica"),
+                new ItemNav("historial", "historial", "Historial"),
+                new ItemNav("reportes", "reportes", "Reportes")
         ));
     }
 
@@ -153,13 +155,14 @@ public class RectorDashboard extends DashboardBase {
         JTextField correo = campoEstilizado(Estilos.texto(usuario, "correo"));
         List<Map<String, Object>> roles = roles();
         JComboBox<String> rolCombo = new JComboBox<>();
+        Estilos.estilizarCombo(rolCombo);
         int idxSeleccionado = 0;
         for (int i = 0; i < roles.size(); i++) {
             rolCombo.addItem(Estilos.texto(roles.get(i), "nombre_rol"));
             if (((Number) roles.get(i).get("id_rol")).intValue() == ((Number) usuario.get("id_rol")).intValue()) idxSeleccionado = i;
         }
         rolCombo.setSelectedIndex(idxSeleccionado);
-        JPasswordField nuevaClave = new JPasswordField();
+        JPasswordField nuevaClave = new CampoPassword();
 
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 8));
         panel.setOpaque(false);
@@ -212,39 +215,40 @@ public class RectorDashboard extends DashboardBase {
     }
 
     private JTextField campoEstilizado(String texto) {
-        JTextField campo = new JTextField(texto);
-        campo.setBackground(Estilos.aclarar(Estilos.FONDO_TARJETA, 0.06));
-        campo.setForeground(Estilos.TEXTO);
-        campo.setCaretColor(Estilos.TEXTO);
-        campo.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Estilos.BORDE), BorderFactory.createEmptyBorder(4, 6, 4, 6)));
-        return campo;
+        return new CampoTexto(texto);
     }
 
     private JPanel panelCrearUsuario() {
         JPanel raiz = columna();
         raiz.add(Estilos.crearTituloSeccion("Crear Usuario"));
 
-        JTextField nombre = new JTextField(20);
-        JTextField correo = new JTextField(20);
-        JPasswordField clave = new JPasswordField(20);
+        JTextField nombre = new CampoTexto(20);
+        JTextField correo = new CampoTexto(20);
+        JPasswordField clave = new CampoPassword(20);
         List<Map<String, Object>> roles = roles();
         JComboBox<String> rolCombo = new JComboBox<>();
+        Estilos.estilizarCombo(rolCombo);
         for (Map<String, Object> r : roles) rolCombo.addItem(Estilos.texto(r, "nombre_rol"));
 
         JPanel form = new JPanel(new GridBagLayout());
         form.setOpaque(false);
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(6, 6, 6, 6);
+        gc.insets = new Insets(7, 6, 7, 6);
         gc.anchor = GridBagConstraints.WEST;
-        gc.gridx = 0; gc.gridy = 0; form.add(etiqueta("Nombre:"), gc);
-        gc.gridx = 1; form.add(nombre, gc);
-        gc.gridx = 0; gc.gridy = 1; form.add(etiqueta("Correo:"), gc);
-        gc.gridx = 1; form.add(correo, gc);
-        gc.gridx = 0; gc.gridy = 2; form.add(etiqueta("Rol:"), gc);
-        gc.gridx = 1; form.add(rolCombo, gc);
-        gc.gridx = 0; gc.gridy = 3; form.add(etiqueta("Contraseña:"), gc);
-        gc.gridx = 1; form.add(clave, gc);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.gridx = 1; gc.weightx = 1;
+        nombre.setPreferredSize(new Dimension(260, 34));
+        correo.setPreferredSize(new Dimension(260, 34));
+        clave.setPreferredSize(new Dimension(260, 34));
+        rolCombo.setPreferredSize(new Dimension(260, 34));
+        gc.gridx = 0; gc.gridy = 0; gc.weightx = 0; form.add(etiqueta("Nombre:"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(nombre, gc);
+        gc.gridx = 0; gc.gridy = 1; gc.weightx = 0; form.add(etiqueta("Correo:"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(correo, gc);
+        gc.gridx = 0; gc.gridy = 2; gc.weightx = 0; form.add(etiqueta("Rol:"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(rolCombo, gc);
+        gc.gridx = 0; gc.gridy = 3; gc.weightx = 0; form.add(etiqueta("Contraseña:"), gc);
+        gc.gridx = 1; gc.weightx = 1; form.add(clave, gc);
 
         BotonRedondeado guardar = new BotonRedondeado("Crear usuario", 10).colores(Estilos.ROJO, Estilos.ROJO.brighter());
         guardar.addActionListener(e -> {
@@ -271,9 +275,10 @@ public class RectorDashboard extends DashboardBase {
             Dialogos.exito(this, "Usuario «" + n + "» creado exitosamente (ID: " + nuevoId + ").");
             nombre.setText(""); correo.setText(""); clave.setText("");
         });
-        gc.gridx = 1; gc.gridy = 4; form.add(guardar, gc);
+        guardar.setPreferredSize(new Dimension(180, 38));
+        gc.gridx = 1; gc.gridy = 4; gc.fill = GridBagConstraints.NONE; gc.anchor = GridBagConstraints.EAST; form.add(guardar, gc);
 
-        raiz.add(Estilos.crearTarjeta(null, form));
+        raiz.add(Estilos.crearTarjeta("Nuevo usuario", form));
         return raiz;
     }
 
@@ -323,8 +328,10 @@ public class RectorDashboard extends DashboardBase {
         }
 
         JComboBox<String> comboEstudiante = new JComboBox<>();
+        Estilos.estilizarCombo(comboEstudiante);
         for (Map<String, Object> e : estudiantes) comboEstudiante.addItem(Estilos.texto(e, "nombre"));
         JComboBox<String> comboAsignacion = new JComboBox<>();
+        Estilos.estilizarCombo(comboAsignacion);
         for (Map<String, Object> a : asigDisponibles) {
             comboAsignacion.addItem(Estilos.texto(a, "materia") + " — " + Estilos.texto(a, "curso") + " (" + Estilos.texto(a, "docente") + ")");
         }
@@ -429,8 +436,10 @@ public class RectorDashboard extends DashboardBase {
         }
 
         JComboBox<String> comboAcudiente = new JComboBox<>();
+        Estilos.estilizarCombo(comboAcudiente);
         for (Map<String, Object> a : acudientes) comboAcudiente.addItem(Estilos.texto(a, "nombre"));
         JComboBox<String> comboEstudiante = new JComboBox<>();
+        Estilos.estilizarCombo(comboEstudiante);
         for (Map<String, Object> e : estudiantes) comboEstudiante.addItem(Estilos.texto(e, "nombre"));
 
         JPanel form = new JPanel(new GridBagLayout());
@@ -705,16 +714,22 @@ public class RectorDashboard extends DashboardBase {
         }
 
         JComboBox<String> comboDocente = new JComboBox<>();
+        Estilos.estilizarCombo(comboDocente);
         for (Map<String, Object> d : docentes) comboDocente.addItem(Estilos.texto(d, "nombre"));
         JComboBox<String> comboMateria = new JComboBox<>();
+        Estilos.estilizarCombo(comboMateria);
         for (Map<String, Object> m : materias) comboMateria.addItem(Estilos.texto(m, "nombre"));
         JComboBox<String> comboCurso = new JComboBox<>();
+        Estilos.estilizarCombo(comboCurso);
         for (Map<String, Object> c : cursos) comboCurso.addItem(Estilos.texto(c, "nombre"));
         JComboBox<String> comboSalon = new JComboBox<>();
+        Estilos.estilizarCombo(comboSalon);
         for (Map<String, Object> s : salones) comboSalon.addItem(Estilos.texto(s, "nombre"));
         JComboBox<String> comboHorario = new JComboBox<>();
+        Estilos.estilizarCombo(comboHorario);
         for (Map<String, Object> h : horarios) comboHorario.addItem(Estilos.texto(h, "dia") + " " + Estilos.texto(h, "hora_inicio") + "–" + Estilos.texto(h, "hora_fin"));
         JComboBox<String> comboPeriodo = new JComboBox<>();
+        Estilos.estilizarCombo(comboPeriodo);
         for (Map<String, Object> p : periodos) comboPeriodo.addItem(Estilos.texto(p, "nombre"));
 
         JPanel form = new JPanel(new GridBagLayout());

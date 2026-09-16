@@ -13,10 +13,10 @@ public class AdministrativoDashboard extends DashboardBase {
 
     public AdministrativoDashboard() {
         super("Administrativo — Dashboard", "Administrativo — Gestión", Estilos.AMBAR, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("estudiantes", "🎓", "Estudiantes"),
-                new ItemNav("boletines", "🧾", "Boletines"),
-                new ItemNav("historial", "🕑", "Historial")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("estudiantes", "estudiantes", "Estudiantes"),
+                new ItemNav("boletines", "boletines", "Boletines"),
+                new ItemNav("historial", "historial", "Historial")
         ));
     }
 

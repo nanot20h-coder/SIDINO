@@ -3,6 +3,8 @@ package com.sidino.ui;
 import com.sidino.core.DB;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.BotonRedondeado;
+import com.sidino.ui.componentes.CampoPassword;
+import com.sidino.ui.componentes.CampoTexto;
 import com.sidino.ui.componentes.Dialogos;
 import com.sidino.ui.componentes.Estilos;
 
@@ -17,11 +19,11 @@ public class DocenteDashboard extends DashboardBase {
 
     public DocenteDashboard() {
         super("Docente — Dashboard", "Docente — Mi Panel", Estilos.AZUL, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("horario", "📅", "Mis clases"),
-                new ItemNav("notas", "⭐", "Registrar notas"),
-                new ItemNav("observador", "📖", "Observador"),
-                new ItemNav("contenido", "📁", "Contenido")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("horario", "horario", "Mis clases"),
+                new ItemNav("notas", "notas", "Registrar notas"),
+                new ItemNav("observador", "observador", "Observador"),
+                new ItemNav("contenido", "contenido", "Contenido")
         ));
     }
 
@@ -168,14 +170,15 @@ public class DocenteDashboard extends DashboardBase {
             gc.gridy = 0; gc.gridx = 0; gc.anchor = GridBagConstraints.WEST;
 
             JComboBox<String> comboMatricula = new JComboBox<>();
+            Estilos.estilizarCombo(comboMatricula);
             comboMatricula.addItem("— Selecciona —");
             for (Map<String, Object> m : matriculas) {
                 comboMatricula.addItem(Estilos.texto(m, "estudiante") + " · " + Estilos.texto(m, "materia") + " (" + Estilos.texto(m, "curso") + ")");
             }
-            JTextField campoValor = new JTextField(5);
-            JTextField campoTipo = new JTextField(14);
-            JTextField campoPorcentaje = new JTextField(5);
-            JTextField campoFecha = new JTextField(LocalDate.now().toString(), 10);
+            JTextField campoValor = new CampoTexto(5);
+            JTextField campoTipo = new CampoTexto(14);
+            JTextField campoPorcentaje = new CampoTexto(5);
+            JTextField campoFecha = new CampoTexto(LocalDate.now().toString(), 10);
 
             form.add(etiqueta("Estudiante / Materia:"), gc);
             gc.gridx = 1; form.add(comboMatricula, gc);
@@ -244,13 +247,15 @@ public class DocenteDashboard extends DashboardBase {
             gc.anchor = GridBagConstraints.WEST;
 
             JComboBox<String> comboClase = new JComboBox<>();
+            Estilos.estilizarCombo(comboClase);
             comboClase.addItem("— Selecciona clase —");
             for (Map<String, Object> a : asig) {
                 comboClase.addItem(Estilos.texto(a, "materia") + " — " + Estilos.texto(a, "curso"));
             }
             JComboBox<String> comboEstudiante = new JComboBox<>();
+            Estilos.estilizarCombo(comboEstudiante);
             comboEstudiante.addItem("— Selecciona clase primero —");
-            JTextField campoFecha = new JTextField(LocalDate.now().toString(), 10);
+            JTextField campoFecha = new CampoTexto(LocalDate.now().toString(), 10);
             JTextArea campoDescripcion = new JTextArea(3, 30);
             campoDescripcion.setLineWrap(true);
             campoDescripcion.setWrapStyleWord(true);
@@ -328,10 +333,11 @@ public class DocenteDashboard extends DashboardBase {
             gc.fill = GridBagConstraints.HORIZONTAL;
 
             JComboBox<String> comboClase = new JComboBox<>();
+            Estilos.estilizarCombo(comboClase);
             for (Map<String, Object> a : asig) {
                 comboClase.addItem(Estilos.texto(a, "materia") + " — " + Estilos.texto(a, "curso"));
             }
-            JTextField campoTitulo = new JTextField(22);
+            JTextField campoTitulo = new CampoTexto(22);
             JTextArea campoDescripcion = new JTextArea(3, 24);
             campoDescripcion.setLineWrap(true);
             campoDescripcion.setWrapStyleWord(true);
