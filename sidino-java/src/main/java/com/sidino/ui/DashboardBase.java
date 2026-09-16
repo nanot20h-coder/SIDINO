@@ -3,6 +3,7 @@ package com.sidino.ui;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.BotonRedondeado;
 import com.sidino.ui.componentes.Estilos;
+import com.sidino.ui.componentes.Iconos;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 public abstract class DashboardBase extends JPanel {
 
+    /** icono = clave para Iconos.crear(...) (p. ej. "dashboard", "usuarios"), no un emoji. */
     public record ItemNav(String id, String icono, String etiqueta) {}
 
     private final CardLayout cardLayout = new CardLayout();
@@ -89,16 +91,20 @@ public abstract class DashboardBase extends JPanel {
 
     // ── Botón de navegación con estado activo/hover pintado a mano (rounded + degradado) ──
     private class BotonNav extends JButton {
+        private final String claveIcono;
         private boolean activo;
         private boolean hover;
 
-        BotonNav(String texto) {
+        BotonNav(String claveIcono, String texto) {
             super(texto);
+            this.claveIcono = claveIcono;
             setOpaque(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
             setFocusPainted(false);
             setHorizontalAlignment(SwingConstants.LEFT);
+            setIconTextGap(10);
+            setIcon(Iconos.crear(claveIcono, Estilos.TEXTO_SEC, 17));
             setFont(Estilos.FUENTE_NORMAL);
             setForeground(Estilos.TEXTO_SEC);
             setBorder(new EmptyBorder(9, 14, 9, 10));
@@ -111,7 +117,9 @@ public abstract class DashboardBase extends JPanel {
 
         void setActivo(boolean activo) {
             this.activo = activo;
-            setForeground(activo ? Color.WHITE : Estilos.TEXTO_SEC);
+            Color color = activo ? Color.WHITE : Estilos.TEXTO_SEC;
+            setForeground(color);
+            setIcon(Iconos.crear(claveIcono, color, 17));
             repaint();
         }
 
@@ -149,7 +157,8 @@ public abstract class DashboardBase extends JPanel {
                 BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(0, 0, 0, 80)),
                 new EmptyBorder(18, 14, 18, 14)));
 
-        JLabel marca = new JLabel("\uD83D\uDC19 SIDINO 2026");
+        JLabel marca = new JLabel("SIDINO 2026", Iconos.crear("marca", Estilos.ACCENT, 22), SwingConstants.LEFT);
+        marca.setIconTextGap(10);
         marca.setFont(new Font("Arial", Font.BOLD, 18));
         marca.setForeground(Estilos.TEXTO);
         marca.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -202,7 +211,7 @@ public abstract class DashboardBase extends JPanel {
         sidebar.add(Box.createVerticalStrut(14));
 
         for (ItemNav item : nav) {
-            BotonNav boton = new BotonNav(item.icono() + "   " + item.etiqueta());
+            BotonNav boton = new BotonNav(item.icono(), item.etiqueta());
             boton.setAlignmentX(Component.LEFT_ALIGNMENT);
             boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
             boton.addActionListener(e -> mostrarModulo(item.id()));
@@ -212,7 +221,10 @@ public abstract class DashboardBase extends JPanel {
         }
 
         sidebar.add(Box.createVerticalGlue());
-        JButton salir = new BotonRedondeado("\u23FB  Cerrar sesión", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
+        JButton salir = new BotonRedondeado("Cerrar sesión", 10).colores(Estilos.ROJO, Estilos.aclarar(Estilos.ROJO, 0.15));
+        salir.setIcon(Iconos.crear("salir", Color.WHITE, 16));
+        salir.setIconTextGap(8);
+        salir.setHorizontalAlignment(SwingConstants.CENTER);
         salir.setAlignmentX(Component.LEFT_ALIGNMENT);
         salir.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         salir.addActionListener(e -> cerrarSesion());
@@ -242,15 +254,13 @@ public abstract class DashboardBase extends JPanel {
         JPanel derecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
         derecha.setOpaque(false);
 
-        JLabel engranaje = new JLabel("\u2699");
-        engranaje.setFont(new Font("Arial", Font.PLAIN, 20));
-        engranaje.setForeground(Estilos.TEXTO_SEC);
+        JLabel engranaje = new JLabel(Iconos.crear("ajustes", Estilos.TEXTO_SEC, 20));
         engranaje.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         engranaje.setToolTipText("Personalizar apariencia");
         engranaje.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) { PanelAjustes.mostrar(DashboardBase.this); }
-            @Override public void mouseEntered(MouseEvent e) { engranaje.setForeground(Estilos.ACCENT); }
-            @Override public void mouseExited(MouseEvent e) { engranaje.setForeground(Estilos.TEXTO_SEC); }
+            @Override public void mouseEntered(MouseEvent e) { engranaje.setIcon(Iconos.crear("ajustes", Estilos.ACCENT, 20)); }
+            @Override public void mouseExited(MouseEvent e) { engranaje.setIcon(Iconos.crear("ajustes", Estilos.TEXTO_SEC, 20)); }
         });
 
         JLabel usuario = new JLabel(Sesion.nombre == null ? "Usuario" : Sesion.nombre);

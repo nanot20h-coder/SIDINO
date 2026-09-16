@@ -163,6 +163,49 @@ public class Estilos {
         }
     }
 
+    /**
+     * Da estilo oscuro y coherente con el resto de la app a un combo box,
+     * en vez del combo blanco con look nativo del sistema operativo que
+     * Swing dibuja por defecto. También estiliza la lista desplegable
+     * (fondo oscuro, fila seleccionada con el color de acento).
+     */
+    public static void estilizarCombo(JComboBox<?> combo) {
+        combo.setBackground(aclarar(FONDO_TARJETA, 0.06));
+        combo.setForeground(TEXTO);
+        combo.setFont(FUENTE_NORMAL);
+        combo.setFocusable(true);
+        combo.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDE, 1, true), new EmptyBorder(4, 8, 4, 8)));
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean seleccionado, boolean conFoco) {
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(list, value, index, seleccionado, conFoco);
+                lbl.setOpaque(true);
+                lbl.setBorder(new EmptyBorder(6, 10, 6, 10));
+                lbl.setBackground(seleccionado ? ACCENT : FONDO_TARJETA);
+                lbl.setForeground(seleccionado ? Color.WHITE : TEXTO);
+                return lbl;
+            }
+        });
+    }
+
+    /** Etiqueta de campo de formulario (encima o a la izquierda del campo), con espaciado uniforme. */
+    public static JLabel crearEtiquetaCampo(String texto) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setForeground(TEXTO_SEC);
+        lbl.setFont(FUENTE_NEGRITA);
+        lbl.setBorder(new EmptyBorder(0, 0, 4, 0));
+        return lbl;
+    }
+
+    /** Etiqueta con ícono vectorial + texto, usada en títulos y encabezados con ícono. */
+    public static JLabel crearEtiquetaConIcono(String claveIcono, String texto, Color colorIcono, int tamanoIcono) {
+        JLabel lbl = new JLabel(texto, Iconos.crear(claveIcono, colorIcono, tamanoIcono), SwingConstants.LEFT);
+        lbl.setIconTextGap(8);
+        lbl.setForeground(TEXTO);
+        return lbl;
+    }
+
     public static String texto(Map<String, Object> fila, String clave) {
         Object v = fila.get(clave);
         return v == null ? "" : v.toString();
@@ -264,8 +307,7 @@ public class Estilos {
         p.setBackground(FONDO_TARJETA);
         p.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDE, 1, true), new EmptyBorder(34, 20, 34, 20)));
-        JLabel icono = new JLabel("\uD83D\uDCED", SwingConstants.CENTER);
-        icono.setFont(new Font("Arial", Font.PLAIN, 26));
+        JLabel icono = new JLabel(Iconos.crear("vacio", TEXTO_SEC, 30), SwingConstants.CENTER);
         JLabel lbl = new JLabel(mensaje, SwingConstants.CENTER);
         lbl.setForeground(TEXTO_SEC);
         lbl.setFont(FUENTE_NORMAL);
@@ -287,10 +329,9 @@ public class Estilos {
         p.setBackground(new Color(AZUL.getRed(), AZUL.getGreen(), AZUL.getBlue(), 30));
         p.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 3, 0, 0, AZUL), new EmptyBorder(12, 14, 12, 16)));
-        JLabel icono = new JLabel("\u2139");
-        icono.setForeground(AZUL);
-        icono.setFont(new Font("Arial", Font.BOLD, 16));
+        JLabel icono = new JLabel(Iconos.crear("info", AZUL, 18));
         icono.setVerticalAlignment(SwingConstants.TOP);
+        icono.setBorder(new EmptyBorder(2, 0, 0, 0));
         String html = "<html>" + mensaje.replace("\n", "<br>") + "</html>";
         JLabel lbl = new JLabel(html);
         lbl.setForeground(AZUL);

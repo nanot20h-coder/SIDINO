@@ -3,6 +3,7 @@ package com.sidino.ui;
 import com.sidino.core.Preferencias;
 import com.sidino.ui.componentes.BotonRedondeado;
 import com.sidino.ui.componentes.Estilos;
+import com.sidino.ui.componentes.Iconos;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -30,7 +31,8 @@ public class PanelAjustes {
         tarjeta.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Estilos.BORDE, 1, true), new EmptyBorder(22, 26, 20, 26)));
 
-        JLabel titulo = new JLabel("\uD83C\uDFA8  Personalizar");
+        JLabel titulo = new JLabel("Personalizar", Iconos.crear("ajustes", Estilos.ACCENT, 20), SwingConstants.LEFT);
+        titulo.setIconTextGap(10);
         titulo.setFont(new Font("Arial", Font.BOLD, 18));
         titulo.setForeground(Estilos.TEXTO);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -45,8 +47,12 @@ public class PanelAjustes {
         filaTema.setMaximumSize(new Dimension(400, 42));
 
         boolean[] oscuroSeleccionado = {Preferencias.esTemaOscuro()};
-        BotonRedondeado btnOscuro = new BotonRedondeado("\uD83C\uDF19 Oscuro", 10);
-        BotonRedondeado btnClaro = new BotonRedondeado("\u2600 Claro", 10);
+        BotonRedondeado btnOscuro = new BotonRedondeado("Oscuro", 10);
+        btnOscuro.setIcon(Iconos.crear("tema_oscuro", Color.WHITE, 15));
+        btnOscuro.setIconTextGap(8);
+        BotonRedondeado btnClaro = new BotonRedondeado("Claro", 10);
+        btnClaro.setIcon(Iconos.crear("tema_claro", Color.WHITE, 15));
+        btnClaro.setIconTextGap(8);
         Runnable actualizarBotonesTema = () -> {
             btnOscuro.colores(oscuroSeleccionado[0] ? Estilos.ACCENT : Estilos.BORDE,
                     oscuroSeleccionado[0] ? Estilos.aclarar(Estilos.ACCENT, 0.15) : Estilos.aclarar(Estilos.BORDE, 0.2));

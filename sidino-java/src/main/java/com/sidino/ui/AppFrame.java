@@ -20,7 +20,7 @@ public class AppFrame extends JFrame {
     private Integer idRolActual;
 
     private AppFrame() {
-        super("SIDINO \uD83D\uDC19");
+        super("SIDINO 2026");
         setUndecorated(true);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

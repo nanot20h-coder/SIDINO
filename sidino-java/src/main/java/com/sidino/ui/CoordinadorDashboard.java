@@ -4,6 +4,8 @@ import com.sidino.core.DB;
 import com.sidino.core.Sesion;
 import com.sidino.ui.componentes.Estilos;
 import com.sidino.ui.componentes.BotonRedondeado;
+import com.sidino.ui.componentes.CampoPassword;
+import com.sidino.ui.componentes.CampoTexto;
 import com.sidino.ui.componentes.Dialogos;
 
 import javax.swing.*;
@@ -19,11 +21,11 @@ public class CoordinadorDashboard extends DashboardBase {
 
     public CoordinadorDashboard() {
         super("Coordinador — Dashboard", "Coordinación — Panel de Supervisión", Estilos.NARANJA, List.of(
-                new ItemNav("dashboard", "📊", "Dashboard"),
-                new ItemNav("observador", "📖", "Observador"),
-                new ItemNav("citaciones", "📌", "Citaciones"),
-                new ItemNav("docentes", "🧑‍🏫", "Docentes"),
-                new ItemNav("reportes", "📈", "Reportes")
+                new ItemNav("dashboard", "dashboard", "Dashboard"),
+                new ItemNav("observador", "observador", "Observador"),
+                new ItemNav("citaciones", "citaciones", "Citaciones"),
+                new ItemNav("docentes", "docentes", "Docentes"),
+                new ItemNav("reportes", "reportes", "Reportes")
         ));
     }
 
@@ -158,6 +160,7 @@ public class CoordinadorDashboard extends DashboardBase {
 
     private JComboBox<ComboItem> comboEstudiantes() {
         JComboBox<ComboItem> combo = new JComboBox<>();
+        Estilos.estilizarCombo(combo);
         for (Map<String, Object> f : estudiantesParaCombo()) {
             combo.addItem(new ComboItem(f.get("id_usuario"), Estilos.texto(f, "nombre")));
         }
@@ -166,6 +169,7 @@ public class CoordinadorDashboard extends DashboardBase {
 
     private JComboBox<ComboItem> comboAsignaciones() {
         JComboBox<ComboItem> combo = new JComboBox<>();
+        Estilos.estilizarCombo(combo);
         for (Map<String, Object> f : asignacionesParaCombo()) {
             String etiqueta = Estilos.texto(f, "curso") + " · " + Estilos.texto(f, "materia") + " (" + Estilos.texto(f, "docente") + ")";
             combo.addItem(new ComboItem(f.get("id_asignacion"), etiqueta));
@@ -310,7 +314,7 @@ public class CoordinadorDashboard extends DashboardBase {
         }
         JTextArea txtDesc = new JTextArea(4, 20);
         txtDesc.setLineWrap(true); txtDesc.setWrapStyleWord(true);
-        JTextField txtFecha = new JTextField(LocalDate.now().toString());
+        JTextField txtFecha = new CampoTexto(LocalDate.now().toString());
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Estudiante", comboEst);
@@ -347,7 +351,7 @@ public class CoordinadorDashboard extends DashboardBase {
         seleccionarPorId(comboAsig, fila.get("id_asignacion"));
         JTextArea txtDesc = new JTextArea(Estilos.texto(fila, "descripcion"), 4, 20);
         txtDesc.setLineWrap(true); txtDesc.setWrapStyleWord(true);
-        JTextField txtFecha = new JTextField(String.valueOf(fila.get("fecha")));
+        JTextField txtFecha = new CampoTexto(String.valueOf(fila.get("fecha")));
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Estudiante", comboEst);
@@ -442,7 +446,7 @@ public class CoordinadorDashboard extends DashboardBase {
         }
         JTextArea txtMotivo = new JTextArea(4, 20);
         txtMotivo.setLineWrap(true); txtMotivo.setWrapStyleWord(true);
-        JTextField txtFecha = new JTextField(LocalDate.now().toString());
+        JTextField txtFecha = new CampoTexto(LocalDate.now().toString());
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Estudiante", comboEst);
@@ -479,7 +483,7 @@ public class CoordinadorDashboard extends DashboardBase {
         seleccionarPorId(comboAsig, fila.get("id_asignacion"));
         JTextArea txtMotivo = new JTextArea(Estilos.texto(fila, "motivo"), 4, 20);
         txtMotivo.setLineWrap(true); txtMotivo.setWrapStyleWord(true);
-        JTextField txtFecha = new JTextField(String.valueOf(fila.get("fecha")));
+        JTextField txtFecha = new CampoTexto(String.valueOf(fila.get("fecha")));
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Estudiante", comboEst);
@@ -566,9 +570,9 @@ public class CoordinadorDashboard extends DashboardBase {
     }
 
     private void nuevoDocente(JPanel raiz) {
-        JTextField txtNombre = new JTextField();
-        JTextField txtCorreo = new JTextField();
-        JPasswordField txtPass = new JPasswordField();
+        JTextField txtNombre = new CampoTexto();
+        JTextField txtCorreo = new CampoTexto();
+        JPasswordField txtPass = new CampoPassword();
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Nombre completo", txtNombre);
@@ -593,9 +597,9 @@ public class CoordinadorDashboard extends DashboardBase {
     }
 
     private void editarDocente(JPanel raiz, Map<String, Object> fila) {
-        JTextField txtNombre = new JTextField(Estilos.texto(fila, "nombre"));
-        JTextField txtCorreo = new JTextField(Estilos.texto(fila, "correo"));
-        JPasswordField txtPass = new JPasswordField();
+        JTextField txtNombre = new CampoTexto(Estilos.texto(fila, "nombre"));
+        JTextField txtCorreo = new CampoTexto(Estilos.texto(fila, "correo"));
+        JPasswordField txtPass = new CampoPassword();
 
         LinkedHashMap<String, JComponent> campos = new LinkedHashMap<>();
         campos.put("Nombre completo", txtNombre);

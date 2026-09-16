@@ -15,11 +15,12 @@ public class Dialogos {
     private Dialogos() {}
 
     public enum Tipo {
-        INFO("\u2139", Estilos.AZUL),
-        EXITO("\u2713", Estilos.VERDE),
-        ERROR("\u2715", Estilos.ROJO),
-        ADVERTENCIA("\u26A0", Estilos.AMBAR);
+        INFO("info", Estilos.AZUL),
+        EXITO("exito", Estilos.VERDE),
+        ERROR("error", Estilos.ROJO),
+        ADVERTENCIA("advertencia", Estilos.AMBAR);
 
+        /** Clave para Iconos.crear(...), no un emoji. */
         final String icono;
         final Color color;
         Tipo(String icono, Color color) { this.icono = icono; this.color = color; }
@@ -140,7 +141,7 @@ public class Dialogos {
 
         JPanel icono = new JPanel(new BorderLayout());
         icono.setOpaque(false);
-        JLabel circulo = new JLabel(tipo.icono, SwingConstants.CENTER) {
+        JLabel circulo = new JLabel(Iconos.crear(tipo.icono, tipo.color, 24), SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -150,8 +151,7 @@ public class Dialogos {
                 super.paintComponent(g);
             }
         };
-        circulo.setForeground(tipo.color);
-        circulo.setFont(new Font("Arial", Font.BOLD, 22));
+        circulo.setVerticalAlignment(SwingConstants.CENTER);
         circulo.setPreferredSize(new Dimension(52, 52));
         icono.add(circulo, BorderLayout.CENTER);
         JPanel envoltorioIcono = new JPanel(new FlowLayout(FlowLayout.CENTER));
