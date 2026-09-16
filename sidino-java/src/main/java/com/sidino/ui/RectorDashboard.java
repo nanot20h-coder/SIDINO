@@ -615,6 +615,20 @@ public class RectorDashboard extends DashboardBase {
                         return;
                     }
                 } else {
+                    // Nombres duplicados sin distinguir mayúsculas/minúsculas:
+                    // antes se podía crear "Matemáticas" y luego "MATEMATICAS"
+                    // (o "matematicas") como si fueran cosas distintas. Aquí se
+                    // compara con LOWER(...) para tratarlos como el mismo
+                    // nombre y bloquear la creación del duplicado.
+                    if (c.columna().equalsIgnoreCase("nombre")) {
+                        long yaExiste = DB.contar(
+                                "SELECT COUNT(*) FROM " + tabla + " WHERE LOWER(" + c.columna() + ") = LOWER(?)",
+                                texto);
+                        if (yaExiste > 0) {
+                            Dialogos.error(this, "Ya existe " + articulo + " con el nombre «" + texto + "» (sin importar mayúsculas/minúsculas).\nUsa un nombre distinto.");
+                            return;
+                        }
+                    }
                     valores[i] = texto;
                 }
             }
@@ -729,8 +743,19 @@ public class RectorDashboard extends DashboardBase {
             int idMateria = ((Number) materias.get(comboMateria.getSelectedIndex()).get("id_materia")).intValue();
             int idCurso = ((Number) cursos.get(comboCurso.getSelectedIndex()).get("id_curso")).intValue();
             int idSalon = ((Number) salones.get(comboSalon.getSelectedIndex()).get("id_salon")).intValue();
-            int idHorario = ((Number) horarios.get(comboHorario.getSelectedIndex()).get("id_horario")).intValue();
+            Map<String, Object> horarioElegido = horarios.get(comboHorario.getSelectedIndex());
+            int idHorario = ((Number) horarioElegido.get("id_horario")).intValue();
             int idPeriodo = ((Number) periodos.get(comboPeriodo.getSelectedIndex()).get("id_periodo")).intValue();
+            String diaElegido = Estilos.texto(horarioElegido, "dia");
+            String inicioElegido = Estilos.texto(horarioElegido, "hora_inicio");
+            String finElegido = Estilos.texto(horarioElegido, "hora_fin");
+
+            String conflicto = validarChoqueHorario(idDocente, idCurso, idSalon, idPeriodo, diaElegido, inicioElegido, finElegido);
+            if (conflicto != null) {
+                Dialogos.error(this, conflicto);
+                return;
+            }
+
             try {
                 long nuevoId = DB.ejecutarYObtenerId(
                         "INSERT INTO asignacion_academica (id_docente, id_materia, id_curso, id_salon, id_horario, id_periodo) VALUES (?,?,?,?,?,?)",
@@ -839,6 +864,92 @@ private void abrirAplicacionReportes() {
         );
     }
 }
+    /**
+     * Revisa que la nueva asignación no choque con otra que ya exista en el
+     * MISMO periodo académico. Antes, el sistema solo comparaba si el
+     * id_horario era idéntico, así que un horario de 8 a 10 no chocaba con
+     * uno de 6 a 12 aunque el segundo ya cubriera al primero por completo.
+     * Ahora se compara por DÍA + TRASLAPE DE HORAS (dos intervalos chocan
+     * si "nuevo_inicio < existente_fin Y existente_inicio < nuevo_fin"),
+     * sin importar que sean filas distintas en la tabla horario. Se
+     * revisan tres choques:
+     *   1) El curso ya tiene otra clase que se traslapa en el tiempo (con
+     *      cualquier docente/materia): un curso no puede estar en dos
+     *      clases al mismo tiempo.
+     *   2) El docente ya tiene otra clase que se traslapa: no puede dar dos
+     *      clases al mismo tiempo.
+     *   3) El salón ya está ocupado por otra clase que se traslapa.
+     * Devuelve un mensaje describiendo el choque encontrado (con horario
+     * exacto de la clase existente), o null si no hay ningún conflicto.
+     */
+    private String validarChoqueHorario(int idDocente, int idCurso, int idSalon, int idPeriodo,
+                                         String dia, String horaInicio, String horaFin) {
+
+        // ── FASE 1: docente y salón (los recursos "físicos" de la clase) ──
+        // Se revisan primero porque son las restricciones más básicas: un
+        // profesor no puede estar en dos lugares a la vez, y un salón no
+        // puede tener dos clases al mismo tiempo. Si cualquiera de los dos
+        // ya está ocupado en ese horario, se corta aquí y no se sigue.
+        List<Map<String, Object>> choqueDocente = DB.query("""
+            SELECT m.nombre AS materia, c.nombre AS curso, h.dia, h.hora_inicio, h.hora_fin
+            FROM asignacion_academica aa
+            JOIN materia m ON aa.id_materia = m.id_materia
+            JOIN curso c ON aa.id_curso = c.id_curso
+            JOIN horario h ON aa.id_horario = h.id_horario
+            WHERE aa.id_docente = ? AND aa.id_periodo = ? AND h.dia = ?
+              AND ? < h.hora_fin AND h.hora_inicio < ?
+        """, idDocente, idPeriodo, dia, horaInicio, horaFin);
+        if (!choqueDocente.isEmpty()) {
+            Map<String, Object> d = choqueDocente.get(0);
+            return "Ese docente ya tiene una clase que choca con este horario:\n"
+                    + Estilos.texto(d, "materia") + " con el curso " + Estilos.texto(d, "curso")
+                    + " (" + Estilos.texto(d, "dia") + " " + Estilos.texto(d, "hora_inicio") + "–" + Estilos.texto(d, "hora_fin") + ")"
+                    + "\n\nUn docente no puede dar dos clases que se traslapen en el horario.";
+        }
+
+        List<Map<String, Object>> choqueSalon = DB.query("""
+            SELECT m.nombre AS materia, c.nombre AS curso, h.dia, h.hora_inicio, h.hora_fin
+            FROM asignacion_academica aa
+            JOIN materia m ON aa.id_materia = m.id_materia
+            JOIN curso c ON aa.id_curso = c.id_curso
+            JOIN horario h ON aa.id_horario = h.id_horario
+            WHERE aa.id_salon = ? AND aa.id_periodo = ? AND h.dia = ?
+              AND ? < h.hora_fin AND h.hora_inicio < ?
+        """, idSalon, idPeriodo, dia, horaInicio, horaFin);
+        if (!choqueSalon.isEmpty()) {
+            Map<String, Object> s = choqueSalon.get(0);
+            return "Ese salón ya está ocupado por otra clase que choca con este horario:\n"
+                    + Estilos.texto(s, "materia") + " - " + Estilos.texto(s, "curso")
+                    + " (" + Estilos.texto(s, "dia") + " " + Estilos.texto(s, "hora_inicio") + "–" + Estilos.texto(s, "hora_fin") + ")"
+                    + "\n\nUn salón no puede tener dos clases que se traslapen en el horario.";
+        }
+
+        // ── FASE 2: lo demás (el curso / grupo de estudiantes) ──
+        // Solo se llega aquí si el docente y el salón ya están libres en ese
+        // horario. Ahora se valida que el curso tampoco tenga ya otra clase
+        // asignada en ese mismo bloque de tiempo.
+        List<Map<String, Object>> choqueCurso = DB.query("""
+            SELECT u.nombre AS docente, m.nombre AS materia, h.dia, h.hora_inicio, h.hora_fin
+            FROM asignacion_academica aa
+            JOIN usuario u ON aa.id_docente = u.id_usuario
+            JOIN materia m ON aa.id_materia = m.id_materia
+            JOIN horario h ON aa.id_horario = h.id_horario
+            WHERE aa.id_curso = ? AND aa.id_periodo = ? AND h.dia = ?
+              AND ? < h.hora_fin AND h.hora_inicio < ?
+        """, idCurso, idPeriodo, dia, horaInicio, horaFin);
+        if (!choqueCurso.isEmpty()) {
+            Map<String, Object> c = choqueCurso.get(0);
+            return "Ese curso ya tiene una clase que choca con este horario:\n"
+                    + Estilos.texto(c, "materia") + " con " + Estilos.texto(c, "docente")
+                    + " (" + Estilos.texto(c, "dia") + " " + Estilos.texto(c, "hora_inicio") + "–" + Estilos.texto(c, "hora_fin") + ")"
+                    + "\n\nUn curso no puede tener dos clases que se traslapen en el horario.";
+        }
+
+        // Todo concuerda: ni el docente, ni el salón, ni el curso chocan
+        // con algo ya creado en ese horario → se puede crear la asignación.
+        return null;
+    }
+
     private JLabel etiqueta(String texto) {
         JLabel l = new JLabel(texto);
         l.setForeground(Estilos.TEXTO_SEC);
